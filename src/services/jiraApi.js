@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-// JIRA 서버 설정
+// JIRA 서버 설정 (환경변수 사용)
 const JIRA_CONFIG = {
-  baseURL: '/jira',
-  username: 'woos798',
-  password: '4072',
+  baseURL: process.env.REACT_APP_JIRA_BASE_URL || '/jira',
+  username: process.env.REACT_APP_JIRA_USERNAME,
+  password: process.env.REACT_APP_JIRA_PASSWORD,
 };
 
 // 기본 쿼리 설정
