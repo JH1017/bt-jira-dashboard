@@ -1,0 +1,22 @@
+{
+  "queries": {
+    "received": "project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND duedate > 2026-01-01 ORDER BY createdDate ASC",
+    "inProgress": "project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND status != Closed AND duedate > 2026-01-01 ORDER BY createdDate ASC",
+    "delayed": "project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND status != Closed AND due < now() AND duedate > 2026-01-01 ORDER BY createdDate ASC",
+    "total": "project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND (status = Closed) AND duedate > 2026-01-01 ORDER BY createdDate ASC"
+  },
+  "cards": [
+    { "key": "received", "label": "접수", "color": "blue.300", "labelColor": "gray.400" },
+    { "key": "inProgress", "label": "진행", "color": "yellow.300", "labelColor": "gray.400" },
+    { "key": "delayed", "label": "지연", "color": "red.300", "labelColor": "red.400" },
+    { "key": "total", "label": "완료", "color": "green.300", "labelColor": "gray.400" }
+  ],
+  "intervals": {
+    "issueStatus": 300000, 
+    "issueTablePage": 60000,
+    "projectAllocation": 60000,
+    "memberSchedule": 60000,
+    "projectSchedule": 60000
+  },
+  "visiblePages": [0, 1, 2, 3]
+}

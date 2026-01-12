@@ -1,0 +1,208 @@
+/* 🔴 A. LED 전광판 스타일 */
+.marquee-led {
+  background: #1a0000;
+  border: 3px solid #ff0000;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 
+    0 0 10px #ff0000,
+    0 0 20px #ff000066,
+    inset 0 0 30px #00000099;
+}
+
+.marquee-led .issue-item {
+  background: transparent;
+  color: #ff0000;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  text-shadow: 
+    0 0 5px #ff0000,
+    0 0 10px #ff0000,
+    0 0 15px #ff0000;
+  letter-spacing: 2px;
+  margin-right: 50px;
+  font-size: 18px;
+}
+
+/* 💜 B. 네온사인 스타일 */
+.marquee-neon {
+  background: linear-gradient(180deg, #0d001a 0%, #1a0033 100%);
+  border: 2px solid #ff00ff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 
+    0 0 15px #ff00ff,
+    0 0 30px #ff00ff66,
+    0 0 45px #ff00ff33;
+}
+
+.marquee-neon .issue-item {
+  background: transparent;
+  margin-right: 40px;
+  padding: 8px 16px;
+}
+
+.marquee-neon .issue-key {
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 
+    0 0 5px #00ffff,
+    0 0 10px #00ffff,
+    0 0 20px #00ffff;
+}
+
+.marquee-neon .issue-summary {
+  color: #ff00ff;
+  text-shadow: 
+    0 0 5px #ff00ff,
+    0 0 10px #ff00ff;
+}
+
+.marquee-neon .issue-assignee {
+  color: #00ff00;
+  text-shadow: 
+    0 0 5px #00ff00,
+    0 0 10px #00ff00;
+}
+
+/* 🌈 C. 그라데이션 스타일 */
+.marquee-gradient {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+  border: none;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.marquee-gradient .issue-item {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin-right: 20px;
+  padding: 12px 20px;
+  border-radius: 25px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.marquee-gradient .issue-item.priority-blocker,
+.marquee-gradient .issue-item.priority-critical {
+  background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+}
+
+.marquee-gradient .issue-item.priority-major {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.marquee-gradient .issue-item.priority-minor,
+.marquee-gradient .issue-item.priority-trivial {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #333;
+}
+
+/* 🖥️ D. 뉴스 티커 스타일 */
+.marquee-news {
+  background: linear-gradient(180deg, #cc0000 0%, #990000 100%);
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  position: relative;
+}
+
+.marquee-news::before {
+  content: '🔴 LIVE';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: #ffffff;
+  color: #cc0000;
+  font-weight: bold;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  z-index: 10;
+  font-size: 14px;
+}
+
+.marquee-news .marquee-content {
+  margin-left: 100px;
+  padding: 12px 20px;
+}
+
+.marquee-news .issue-item {
+  background: transparent;
+  color: #ffffff;
+  font-family: 'Arial', sans-serif;
+  font-weight: 500;
+  margin-right: 60px;
+  font-size: 16px;
+}
+
+.marquee-news .issue-item::after {
+  content: '●';
+  margin-left: 60px;
+  color: #ffff00;
+}
+
+/* 🎮 E. 게이밍 RGB 스타일 */
+.marquee-gaming {
+  background: #0a0a0a;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.marquee-gaming::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, 
+    #ff0000, #ff7f00, #ffff00, #00ff00, 
+    #0000ff, #4b0082, #9400d3, #ff0000);
+  background-size: 400% 400%;
+  animation: rainbow 3s ease infinite;
+  z-index: -1;
+  border-radius: 14px;
+}
+
+@keyframes rainbow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.marquee-gaming .issue-item {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(10px);
+  margin-right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.marquee-gaming .issue-key {
+  color: #00ffff;
+  font-weight: bold;
+}
+
+.marquee-gaming .issue-summary {
+  color: #ffffff;
+}
+
+.marquee-gaming .issue-assignee {
+  color: #ff00ff;
+}
+
+/* 공통 애니메이션 */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.priority-blocker,
+.priority-critical {
+  animation: pulse 1.5s ease-in-out infinite;
+}
