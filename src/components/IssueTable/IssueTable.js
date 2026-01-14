@@ -38,9 +38,18 @@ const IssueTable = ({ issues, title, pageInterval = 60000 }) => {
     }, 300);
   };
 
-  const getPriorityColor = (priority) => {
-    const colors = { 'Blocker': 'red', 'Critical': 'red', 'Major': 'orange', 'Minor': 'yellow', 'Trivial': 'green', 'Information': 'blue' };
-    return colors[priority] || 'gray';
+  // SRM 진행단계 색상
+  const getSrmColor = (srmStatus) => {
+    const colors = {
+      '0.선조치': 'blue',
+      '1.접수': 'cyan',
+      '2.분석/검토': 'yellow',
+      '3.사업부서검토': 'orange',
+      '4.조치/적용': 'purple',
+      '5.모니터링': 'green',
+      '9.보류중(사유-댓글)': 'gray',      
+    };
+    return colors[srmStatus] || 'gray';
   };
 
   const getStatusColor = (status) => {
@@ -91,7 +100,7 @@ const IssueTable = ({ issues, title, pageInterval = 60000 }) => {
           <Box w="5%">지연</Box>
           <Box w="8%">이슈 키</Box>
           <Box w="35%">제목</Box>
-          <Box w="7%">우선순위</Box>
+          <Box w="7%">진행단계</Box>
           <Box w="8%">상태</Box>
           <Box w="10%">담당자</Box>
         </Flex>
@@ -140,7 +149,7 @@ const IssueTable = ({ issues, title, pageInterval = 60000 }) => {
               {issue.summary}
             </Box>
             <Box w="7%">
-              <Badge colorPalette={getPriorityColor(issue.priority)} fontSize="xs">{issue.priority}</Badge>
+              <Badge colorPalette={getSrmColor(issue.srmStatus)} fontSize="xs">{issue.srmStatus || '-'}</Badge>
             </Box>
             <Box w="8%">
               <Badge colorPalette={getStatusColor(issue.status)} fontSize="xs">{issue.status}</Badge>

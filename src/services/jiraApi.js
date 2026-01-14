@@ -9,10 +9,10 @@ const JIRA_CONFIG = {
 
 // 기본 쿼리 설정
 export const DEFAULT_QUERIES = {
-  received: `project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND createdDate > 2025-11-01 ORDER BY createdDate ASC`,
-  inProgress: `project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND status != Closed ORDER BY createdDate ASC`,
-  delayed: `project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀)) AND status != Closed AND due < now()`,
-  total: `project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀)) AND status != Closed`,
+  received: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND createdDate > 2025-11-01 ORDER BY createdDate ASC`,
+  inProgress: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND status != Closed ORDER BY createdDate ASC`,
+  delayed: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀)) AND status != Closed AND due < now()`,
+  total: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀)) AND status != Closed`,
 };
 
 // Axios 인스턴스 생성
@@ -61,14 +61,28 @@ const calculateDelay = (dueDate) => {
   return { isDelayed: false, delayDays: 0 };
 };
 
+// SRM 진행단계 값 추출
+const getSrmStatus = (customField) => {
+  if (!customField) return '-';
+  // 객체인 경우 value 속성 사용
+  if (typeof customField === 'object' && customField.value) {
+    return customField.value;
+  }
+  // 문자열인 경우 그대로 반환
+  if (typeof customField === 'string') {
+    return customField;
+  }
+  return '-';
+};
+
 // 1페이지 - 지연 건
 export const getDelayedIssues = async () => {
   try {
     const response = await jiraClient.get('/rest/api/2/search', {
       params: {
-        jql: `project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀)) AND (status != Closed) AND due < now() ORDER BY createdDate ASC`,
+        jql: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀)) AND (status != Closed) AND due < now() ORDER BY createdDate ASC`,
         maxResults: 50,
-        fields: 'summary,priority,assignee,status,issuetype,created,duedate',
+        fields: 'summary,priority,assignee,status,issuetype,created,duedate,customfield_11517',
       },
     });
 
@@ -80,6 +94,7 @@ export const getDelayedIssues = async () => {
         priority: issue.fields.priority?.name || 'Major',
         assignee: issue.fields.assignee?.displayName || '미지정',
         status: issue.fields.status?.name || '상태없음',
+        srmStatus: getSrmStatus(issue.fields.customfield_11517),
         type: issue.fields.issuetype?.name || 'Task',
         createdDate: formatDate(issue.fields.created),
         daysFromCreated: calculateDaysFromCreated(issue.fields.created),
@@ -101,9 +116,9 @@ export const getAllIssues = async () => {
   try {
     const response = await jiraClient.get('/rest/api/2/search', {
       params: {
-        jql: `project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀)) AND status != Closed ORDER BY createdDate ASC`,
+        jql: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀)) AND status != Closed ORDER BY createdDate ASC`,
         maxResults: 50,
-        fields: 'summary,priority,assignee,status,issuetype,created,duedate',
+        fields: 'summary,priority,assignee,status,issuetype,created,duedate,customfield_11517',
       },
     });
 
@@ -115,6 +130,7 @@ export const getAllIssues = async () => {
         priority: issue.fields.priority?.name || 'Major',
         assignee: issue.fields.assignee?.displayName || '미지정',
         status: issue.fields.status?.name || '상태없음',
+        srmStatus: getSrmStatus(issue.fields.customfield_11517),
         type: issue.fields.issuetype?.name || 'Task',
         createdDate: formatDate(issue.fields.created),
         daysFromCreated: calculateDaysFromCreated(issue.fields.created),

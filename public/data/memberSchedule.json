@@ -3,6 +3,12 @@
     "name": "1파트",
     "members": [
       {
+        "name": "이재우",
+        "projects": [
+          { "name": "하나은행-IT서비스데스크 재구축", "start": 1, "end": 5 }
+        ]
+      },
+      {
         "name": "박시용",
         "projects": [
           { "name": "NH농협은행-차세대", "start": 1, "end": 8 }

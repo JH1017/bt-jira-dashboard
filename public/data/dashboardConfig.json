@@ -1,9 +1,9 @@
 {
   "queries": {
-    "received": "project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND duedate > 2026-01-01 ORDER BY createdDate ASC",
-    "inProgress": "project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND status != Closed AND duedate > 2026-01-01 ORDER BY createdDate ASC",
-    "delayed": "project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND status != Closed AND due < now() AND duedate > 2026-01-01 ORDER BY createdDate ASC",
-    "total": "project = SS AND (담당팀 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND (status = Closed) AND duedate > 2026-01-01 ORDER BY createdDate ASC"
+    "received": "project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND duedate > 2026-01-01 ORDER BY createdDate ASC",
+    "inProgress": "project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND status != Closed AND duedate > 2026-01-01 ORDER BY createdDate ASC",
+    "delayed": "project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND status != Closed AND due < now() AND duedate > 2026-01-01 ORDER BY createdDate ASC",
+    "total": "project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND (status = Closed) AND duedate > 2026-01-01 ORDER BY createdDate ASC"
   },
   "cards": [
     { "key": "received", "label": "접수", "color": "blue.300", "labelColor": "gray.400" },
