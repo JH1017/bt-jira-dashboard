@@ -3,9 +3,8 @@
   "period": "2026.01",
   "plans": [
     {
-      "no": 1,
       "customer": "케이뱅크",
-      "solution": "RSM",
+      "products": "RSM",
       "quantity": "20",
       "expectedDate": "2026.07 이후",
       "progress": [
@@ -15,9 +14,8 @@
       "remarks": "Agent 설치 수량은 변동될 수 있습니다."
     },
     {
-      "no": 2,
       "customer": "하나카드",
-      "solution": "RSM",
+      "products": "RSM",
       "quantity": "2",
       "expectedDate": "2027.07",
       "progress": [
@@ -26,9 +24,8 @@
       "remarks": "센터별 Site License로 판매되어 있음"
     },
     {
-      "no": 3,
       "customer": "NH농협카드",
-      "solution": "ARGO",
+      "products": "ARGO",
       "quantity": "1,000석",
       "expectedDate": "2026.09 이후",
       "progress": [
@@ -37,9 +34,8 @@
       "remarks": "수량 변동될수 있음"
     },
     {
-      "no": 4,
       "customer": "IM뱅크",
-      "solution": "ARGO,RSM",
+      "products": "ARGO,RSM",
       "quantity": "250석",
       "expectedDate": "2026.12월",
       "progress": [
@@ -49,11 +45,10 @@
       "remarks": "1단계 사업진행에 따라 일정 변동될수 있습니다."
     },
     {
-      "no": 5,
       "customer": "경남은행",
-      "solution": "argo",
+      "products": "ARGO",
       "quantity": "160석",
-      "expectedDate": "26년 5월6월예상",
+      "expectedDate": "26년 5월~6월 예상",
       "progress": [
         "기존 시스템 유지하는 형태로 구현"
       ],
