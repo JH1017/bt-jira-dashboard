@@ -7,6 +7,7 @@ import ProjectStatus from '../components/ProjectStatus/ProjectStatus';
 import AssigneeStats from '../components/AssigneeStats/AssigneeStats';
 import ProjectSchedule from '../components/ProjectSchedule/ProjectSchedule';
 import MemberSchedule from '../components/MemberSchedule/MemberSchedule';
+import BusinessPlan from '../components/BusinessPlan/BusinessPlan';
 import { useJiraStats, useAllIssues, useRefreshStats } from '../hooks/useJiraData';
 
 const Dashboard = () => {
@@ -33,7 +34,8 @@ const allPages = [
   { id: 1, shortTitle: '담당자', color: 'cyan.400', title: '👤 담당자별 이슈 현황' },
   { id: 2, shortTitle: '할당', color: 'green.400', title: '👨‍💻 프로젝트 투입인력 할당 현황' },
   { id: 3, shortTitle: '투입', color: 'purple.400', title: '📆 인력별 프로젝트 투입현황' },
-  { id: 4, shortTitle: '예정', color: 'orange.400', title: '📅 프로젝트 예정' }
+  { id: 4, shortTitle: '예정', color: 'orange.400', title: '📅 프로젝트 예정' },
+  { id: 5, shortTitle: '사업', color: 'pink.400', title: '📊 사업계획' }
 ];
 
   const pages = allPages.filter(p => visiblePages.includes(p.id));
@@ -110,6 +112,7 @@ const allPages = [
       case 2: return config.intervals?.projectAllocation || 60000;
       case 3: return config.intervals?.memberSchedule || 60000;
       case 4: return config.intervals?.projectSchedule || 60000;
+      case 5: return config.intervals?.businessPlan || 60000;
       default: return 60000;
     }
   };
@@ -297,6 +300,7 @@ const allPages = [
         {activePage === 2 && <ProjectStatus />}
         {activePage === 3 && <MemberSchedule />}
         {activePage === 4 && <ProjectSchedule />}
+        {activePage === 5 && <BusinessPlan />}
       </Box>
 
       {/* 설정 모달 */}
