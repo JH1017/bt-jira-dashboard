@@ -12,11 +12,12 @@
     { "key": "total", "label": "완료", "color": "green.300", "labelColor": "gray.400" }
   ],
   "intervals": {
-    "issueStatus": 300000, 
+    "issueStatus": 60000,
     "issueTablePage": 60000,
     "projectAllocation": 60000,
+    "assigneeStats": 60000,
     "memberSchedule": 60000,
     "projectSchedule": 60000
   },
-  "visiblePages": [0, 1, 2, 3]
+  "visiblePages": [0, 1, 2, 3, 4]
 }

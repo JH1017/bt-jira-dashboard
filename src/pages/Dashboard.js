@@ -4,6 +4,7 @@ import JiraMarquee from '../components/Marquee/JiraMarquee';
 import IssueTable from '../components/IssueTable/IssueTable';
 import SettingsModal from '../components/Settings/SettingsModal';
 import ProjectStatus from '../components/ProjectStatus/ProjectStatus';
+import AssigneeStats from '../components/AssigneeStats/AssigneeStats';
 import ProjectSchedule from '../components/ProjectSchedule/ProjectSchedule';
 import MemberSchedule from '../components/MemberSchedule/MemberSchedule';
 import { useJiraStats, useAllIssues, useRefreshStats } from '../hooks/useJiraData';
@@ -27,13 +28,14 @@ const Dashboard = () => {
   const refreshStats = useRefreshStats();
 
   // 페이지 정보
-  const allPages = [
-    { id: 0, shortTitle: '이슈', color: 'blue.400', title: '📋 개발6팀 이슈 현황' },
-    { id: 1, shortTitle: '할당', color: 'green.400', title: '👨‍💻 프로젝트 투입인력 할당 현황' },
-    { id: 2, shortTitle: '투입', color: 'purple.400', title: '📆 인력별 프로젝트 투입현황' },
-    { id: 3, shortTitle: '예정', color: 'orange.400', title: '📅 프로젝트 예정' }
-  ];
-  
+const allPages = [
+  { id: 0, shortTitle: '이슈', color: 'blue.400', title: '📋 개발6팀 이슈 현황' },
+  { id: 1, shortTitle: '담당자', color: 'cyan.400', title: '👤 담당자별 이슈 현황' },
+  { id: 2, shortTitle: '할당', color: 'green.400', title: '👨‍💻 프로젝트 투입인력 할당 현황' },
+  { id: 3, shortTitle: '투입', color: 'purple.400', title: '📆 인력별 프로젝트 투입현황' },
+  { id: 4, shortTitle: '예정', color: 'orange.400', title: '📅 프로젝트 예정' }
+];
+
   const pages = allPages.filter(p => visiblePages.includes(p.id));
   const currentPage = pages.find(p => p.id === activePage) || pages[0] || allPages[0];
 
@@ -104,12 +106,14 @@ const Dashboard = () => {
     if (!config) return 60000;
     switch (activePage) {
       case 0: return config.intervals?.issueStatus || 60000;
-      case 1: return config.intervals?.projectAllocation || 60000;
-      case 2: return config.intervals?.memberSchedule || 60000;
-      case 3: return config.intervals?.projectSchedule || 60000;
+      case 1: return config.intervals?.assigneeStats || 60000;
+      case 2: return config.intervals?.projectAllocation || 60000;
+      case 3: return config.intervals?.memberSchedule || 60000;
+      case 4: return config.intervals?.projectSchedule || 60000;
       default: return 60000;
     }
   };
+
 
   // 자동 슬라이드
   useEffect(() => {
@@ -289,9 +293,10 @@ const Dashboard = () => {
           </Box>
         )}
 
-        {activePage === 1 && <ProjectStatus />}
-        {activePage === 2 && <MemberSchedule />}
-        {activePage === 3 && <ProjectSchedule />}
+        {activePage === 1 && <AssigneeStats />}
+        {activePage === 2 && <ProjectStatus />}
+        {activePage === 3 && <MemberSchedule />}
+        {activePage === 4 && <ProjectSchedule />}
       </Box>
 
       {/* 설정 모달 */}
