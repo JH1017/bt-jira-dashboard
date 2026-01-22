@@ -1,11 +1,12 @@
 {
   "name": "bt-jira-dashboard",
-  "version": "0.1.0",  
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
     "@chakra-ui/react": "^3.30.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@react-oauth/google": "^0.13.4",
     "@tanstack/react-query": "^5.90.16",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -13,6 +14,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.13.2",
     "framer-motion": "^12.24.10",
+    "gapi-script": "^1.2.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-fast-marquee": "^1.6.5",

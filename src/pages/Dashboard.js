@@ -8,6 +8,7 @@ import AssigneeStats from '../components/AssigneeStats/AssigneeStats';
 import ProjectSchedule from '../components/ProjectSchedule/ProjectSchedule';
 import MemberSchedule from '../components/MemberSchedule/MemberSchedule';
 import BusinessPlan from '../components/BusinessPlan/BusinessPlan';
+import GoogleCalendar from '../components/GoogleCalendar/GoogleCalendar';
 import { useJiraStats, useAllIssues, useRefreshStats } from '../hooks/useJiraData';
 
 const Dashboard = () => {
@@ -35,7 +36,8 @@ const allPages = [
   { id: 2, shortTitle: '할당', color: 'green.400', title: '👨‍💻 프로젝트 투입인력 할당 현황' },
   { id: 3, shortTitle: '투입', color: 'purple.400', title: '📆 인력별 프로젝트 투입현황' },
   { id: 4, shortTitle: '예정', color: 'orange.400', title: '📅 프로젝트 예정' },
-  { id: 5, shortTitle: '사업', color: 'pink.400', title: '📊 사업계획' }
+  { id: 5, shortTitle: '사업', color: 'pink.400', title: '📊 사업계획' },
+  { id: 6, shortTitle: '캘린더', color: 'teal.400', title: '📅 구글 캘린더' }  
 ];
 
   const pages = allPages.filter(p => visiblePages.includes(p.id));
@@ -301,6 +303,7 @@ const allPages = [
         {activePage === 3 && <MemberSchedule />}
         {activePage === 4 && <ProjectSchedule />}
         {activePage === 5 && <BusinessPlan />}
+        {activePage === 6 && <GoogleCalendar />}
       </Box>
 
       {/* 설정 모달 */}

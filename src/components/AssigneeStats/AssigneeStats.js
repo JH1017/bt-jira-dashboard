@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Box, Text, Flex } from '@chakra-ui/react';
 import { useAllIssues } from '../../hooks/useJiraData';
+import AssigneeIssuesModal from './AssigneeIssuesModal';
 
 const AssigneeStats = () => {
   const { data: issues, isLoading } = useAllIssues();
   const [assigneeData, setAssigneeData] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAssignee, setSelectedAssignee] = useState(null);
+  const [selectedFilter, setSelectedFilter] = useState('total'); // 'total', 'delayed', 'inProgress'
 
   // 개발6팀 팀원 목록
   const teamMembers = [
@@ -50,6 +54,20 @@ const AssigneeStats = () => {
       setAssigneeData(sortedData);
     }
   }, [issues]);
+
+  // 모달 열기
+  const handleOpenModal = (assigneeName, filterType) => {
+    setSelectedAssignee(assigneeName);
+    setSelectedFilter(filterType);
+    setIsModalOpen(true);
+  };
+
+  // 모달 닫기
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedAssignee(null);
+    setSelectedFilter('total');
+  };
 
   if (isLoading) {
     return (
@@ -144,22 +162,65 @@ const AssigneeStats = () => {
                 )}
               </Text> 
 
-
               {/* 통계 */}
               <Flex justifyContent="space-around" mb={2}>
-                <Box textAlign="center">
+                <Box 
+                  textAlign="center"
+                  cursor="pointer"
+                  _hover={{ transform: 'scale(1.1)' }}
+                  transition="transform 0.2s"
+                  onClick={() => handleOpenModal(assignee.name, 'total')}
+                >
                   <Text color="gray.400" fontSize="xl">총</Text>
-                  <Text color="blue.300" fontSize="7xl" fontWeight="bold">{assignee.total}</Text>
+                  <Text 
+                    color="blue.300" 
+                    fontSize="7xl" 
+                    fontWeight="bold"
+                    textDecoration="underline"
+                    textDecorationColor="blue.500"
+                    textDecorationThickness="2px"
+                  >
+                    {assignee.total}
+                  </Text>
                 </Box>
-                <Box textAlign="center">
+                <Box 
+                  textAlign="center"
+                  cursor="pointer"
+                  _hover={{ transform: 'scale(1.1)' }}
+                  transition="transform 0.2s"
+                  onClick={() => handleOpenModal(assignee.name, 'delayed')}
+                >
                   <Text color="gray.400" fontSize="xl">지연</Text>
-                  <Text color={assignee.delayed > 0 ? 'red.300' : 'gray.500'} fontSize="7xl" fontWeight="bold">
+                  <Text 
+                    color={assignee.delayed > 0 ? 'red.300' : 'gray.500'} 
+                    fontSize="7xl" 
+                    fontWeight="bold"
+                    textDecoration={assignee.delayed > 0 ? "underline" : "none"}
+                    textDecorationColor="red.500"
+                    textDecorationThickness="2px"
+                    cursor={assignee.delayed > 0 ? "pointer" : "default"}
+                  >
                     {assignee.delayed}
                   </Text>
                 </Box>
-                <Box textAlign="center">
+                <Box 
+                  textAlign="center"
+                  cursor="pointer"
+                  _hover={{ transform: 'scale(1.1)' }}
+                  transition="transform 0.2s"
+                  onClick={() => handleOpenModal(assignee.name, 'inProgress')}
+                >
                   <Text color="gray.400" fontSize="xl">작업중</Text>
-                  <Text color="yellow.300" fontSize="7xl" fontWeight="bold">{assignee.inProgress}</Text>
+                  <Text 
+                    color="yellow.300" 
+                    fontSize="7xl" 
+                    fontWeight="bold"
+                    textDecoration="underline"
+                    textDecorationColor="yellow.500"
+                    textDecorationThickness="2px"
+                  >
+                    {assignee.inProgress}
+                  </Text>
                 </Box>
               </Flex>
 
@@ -185,7 +246,19 @@ const AssigneeStats = () => {
         <Text color="gray.500" fontSize="sm">
           🔄 5분마다 데이터 갱신
         </Text>
+        <Text color="gray.500" fontSize="sm">
+          💡 숫자를 클릭하면 상세 이슈 목록을 볼 수 있습니다
+        </Text>
       </Box>
+
+      {/* 이슈 목록 모달 */}
+      <AssigneeIssuesModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        assigneeName={selectedAssignee}
+        allIssues={issues}
+        initialFilter={selectedFilter}
+      />
     </Box>
   );
 };

@@ -18,7 +18,8 @@
     "assigneeStats": 60000,
     "memberSchedule": 60000,
     "projectSchedule": 60000,
-    "businessPlan": 60000
+    "businessPlan": 60000,
+    "googleCalendar": 60000
   },
-  "visiblePages": [0, 1, 2, 3, 4, 5]
+  "visiblePages": [0, 1, 2, 3, 4, 5, 6]
 }
