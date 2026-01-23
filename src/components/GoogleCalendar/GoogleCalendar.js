@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Box, Text, Flex, Button, VStack, HStack, Grid, 
   DialogRoot, DialogBackdrop, DialogPositioner, DialogContent, 
@@ -19,7 +19,9 @@ const GoogleCalendar = () => {
   });
   const [selectedDate, setSelectedDate] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { data: events, refetch, isLoading: isFetching } = useGoogleCalendar(accessToken, viewMode);
+  const [isVisible, setIsVisible] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const { data: events, refetch, isLoading: isFetching, error } = useGoogleCalendar(accessToken, viewMode);
 
 // 디버깅: events 데이터 상세 확인
   useEffect(() => {
@@ -68,6 +70,28 @@ const GoogleCalendar = () => {
     localStorage.setItem('google_calendar_viewMode', mode);
   };
 
+  // 자동 슬라이드: 일별 -> 주별 -> 월별 -> 일별
+  useEffect(() => {
+    if (!accessToken) return; // 로그인 전에는 슬라이드 안함
+    
+    const viewModes = ['day', 'week', 'month'];
+    const interval = setInterval(() => {
+      setIsVisible(false);
+      setTimeout(() => {
+        setViewMode(prev => {
+          const currentIndex = viewModes.indexOf(prev);
+          const nextIndex = (currentIndex + 1) % viewModes.length;
+          const nextMode = viewModes[nextIndex];
+          localStorage.setItem('google_calendar_viewMode', nextMode);
+          return nextMode;
+        });
+        setIsVisible(true);
+      }, 500);
+    }, 60000); // 60초마다 전환
+
+    return () => clearInterval(interval);
+  }, [accessToken]);
+
   // ... existing code (초기화, 로그인, 로그아웃, 유틸 함수들) ...
 
   // 컴포넌트 마운트 시 Google API 초기화
@@ -94,6 +118,27 @@ const GoogleCalendar = () => {
       setAccessToken(savedToken);
     }
   }, []);
+
+  // 세션 만료 감지
+  useEffect(() => {
+    if (error) {
+      const errorMessage = error.message || '';
+      const isAuthError = 
+        errorMessage.includes('인증') || 
+        errorMessage.includes('만료') || 
+        errorMessage.includes('401') ||
+        errorMessage.includes('Unauthorized') ||
+        errorMessage.includes('토큰');
+      
+      if (isAuthError) {
+        setSessionExpired(true);
+        setAccessToken(null);
+        localStorage.removeItem('google_calendar_token');
+      }
+    } else {
+      setSessionExpired(false);
+    }
+  }, [error]);
 
   // Google 로그인
   const login = useGoogleLogin({
@@ -565,11 +610,13 @@ const GoogleCalendar = () => {
   }
 
   // 뷰 모드 전환 버튼
- // 뷰 모드 전환 버튼
   const ViewModeButtons = () => (
     <HStack gap={2}>
       <Button
-        onClick={() => handleViewModeChange('day')}
+        onClick={() => {
+          handleViewModeChange('day');
+          setIsVisible(true); // 버튼 클릭 시 즉시 표시
+        }}
         bg={viewMode === 'day' ? 'blue.500' : 'gray.600'}
         color="white"
         size="sm"
@@ -578,7 +625,10 @@ const GoogleCalendar = () => {
         일별
       </Button>
       <Button
-        onClick={() => handleViewModeChange('week')}
+        onClick={() => {
+          handleViewModeChange('week');
+          setIsVisible(true);
+        }}
         bg={viewMode === 'week' ? 'blue.500' : 'gray.600'}
         color="white"
         size="sm"
@@ -587,7 +637,10 @@ const GoogleCalendar = () => {
         주별
       </Button>
       <Button
-        onClick={() => handleViewModeChange('month')}
+        onClick={() => {
+          handleViewModeChange('month');
+          setIsVisible(true);
+        }}
         bg={viewMode === 'month' ? 'blue.500' : 'gray.600'}
         color="white"
         size="sm"
@@ -595,6 +648,13 @@ const GoogleCalendar = () => {
       >
         월별
       </Button>
+    </HStack>
+  );
+
+  // 새로고침 및 로그아웃 버튼
+  const ActionButtons = () => (
+    <HStack gap={2}>
+      <ViewModeButtons />
       <Button
         onClick={() => refetch()}
         size="sm"
@@ -620,17 +680,38 @@ const GoogleCalendar = () => {
   const renderDayView = () => {
     if (!todayEvents || todayEvents.length === 0) {
       return (
-        <Box h="100%" display="flex" flexDirection="column" bg="gray.800" p={4}>
+        <Box 
+          h="100%" 
+          display="flex" 
+          flexDirection="column" 
+          bg="gray.800" 
+          p={4}
+          opacity={isVisible ? 1 : 0}
+          transition="opacity 0.5s"
+        >
           <Flex justifyContent="space-between" alignItems="center" mb={4}>
             <Text color="white" fontSize="2xl" fontWeight="bold">
               📅 오늘 일정
             </Text>
-            <ViewModeButtons />
+            <ActionButtons />
           </Flex>
           <Box flex="1" display="flex" alignItems="center" justifyContent="center">
             <VStack gap={4}>
-              <Text color="white" fontSize="xl">📅 오늘 일정이 없습니다</Text>
-              <Text color="gray.400">오늘 예정된 일정이 없습니다.</Text>
+              {sessionExpired ? (
+                <>
+                  <Text color="red.300" fontSize="xl" fontWeight="bold">⚠️ 세션 만료</Text>
+                  <Text color="gray.400">Google 캘린더 세션이 만료되었습니다.</Text>
+                  <Text color="gray.500" fontSize="sm">다시 로그인해주세요.</Text>
+                  <Text color="gray.500" fontSize="xs" mt={2}>
+                    (Google OAuth 토큰은 1시간 후 만료됩니다)
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text color="white" fontSize="xl">📅 오늘 일정이 없습니다</Text>
+                  <Text color="gray.400">오늘 예정된 일정이 없습니다.</Text>
+                </>
+              )}
             </VStack>
           </Box>
           {/* Footer */}
@@ -651,7 +732,15 @@ const GoogleCalendar = () => {
     const itemWidth = `calc((100% - ${(columns - 1) * 12}px) / ${columns})`;
 
     return (
-      <Box h="100%" display="flex" flexDirection="column" bg="gray.800" p={4}>
+      <Box 
+        h="100%" 
+        display="flex" 
+        flexDirection="column" 
+        bg="gray.800" 
+        p={4}
+        opacity={isVisible ? 1 : 0}
+        transition="opacity 0.5s"
+      >
         <Flex justifyContent="space-between" alignItems="center" mb={4}>
           <VStack align="start" gap={1}>
             <Text color="white" fontSize="2xl" fontWeight="bold">
@@ -661,7 +750,7 @@ const GoogleCalendar = () => {
               총 {todayEvents.length}개 일정
             </Text>
           </VStack>
-          <ViewModeButtons />
+          <ActionButtons />
         </Flex>
 
         <Box flex="1" display="flex" alignItems="stretch" overflow="hidden">
@@ -682,8 +771,8 @@ const GoogleCalendar = () => {
                   key={event.id || index}
                   bg="gray.700"
                   borderRadius="md"
-                  p={3}
-                  borderLeft="3px solid"
+                  p={5}
+                  borderLeft="4px solid"
                   borderLeftColor={`${getEventColor(event)}.400`}
                   _hover={{ bg: 'gray.650', transform: 'scale(1.02)' }}
                   transition="all 0.2s"
@@ -694,29 +783,29 @@ const GoogleCalendar = () => {
                   overflow="hidden"
                 >
                   <Box flex="1" minH="0">
-                    <Text color="white" fontSize="md" fontWeight="bold" mb={1} noOfLines={2}>
+                    <Text color="white" fontSize="2xl" fontWeight="bold" mb={2} noOfLines={2}>
                       {event.summary || '(제목 없음)'}
                     </Text>
-                    <VStack align="start" gap={0.5}>
+                    <VStack align="start" gap={1}>
                       {!isAllDay && (
-                        <Text color="gray.300" fontSize="xs">
+                        <Text color="gray.300" fontSize="lg">
                           ⏰ {formatTime(startDate)} - {formatTime(endDate)}
                         </Text>
                       )}
                       {isAllDay && (
-                        <Text color="gray.300" fontSize="xs">
+                        <Text color="gray.300" fontSize="lg">
                           ⏰ 종일
                         </Text>
                       )}
                       {event.location && (
-                        <Text color="gray.400" fontSize="2xs" noOfLines={1}>
+                        <Text color="gray.400" fontSize="md" noOfLines={1}>
                           📍 {event.location}
                         </Text>
                       )}
                     </VStack>
                   </Box>
                   {event.description && (
-                    <Text color="gray.400" fontSize="2xs" noOfLines={2} mt={1}>
+                    <Text color="gray.400" fontSize="md" noOfLines={2} mt={2}>
                       {event.description}
                     </Text>
                   )}
@@ -736,19 +825,245 @@ const GoogleCalendar = () => {
     );
   };
 
+  // 주별 보기용 날짜 박스 컴포넌트
+  const WeekDayBox = ({ day, onShowMore, getEventColor }) => {
+    const [needsMoreButton, setNeedsMoreButton] = useState(false);
+    const containerRef = useRef(null);
+    
+    useEffect(() => {
+      if (containerRef.current) {
+        const checkOverflow = () => {
+          const container = containerRef.current;
+          if (container) {
+            const hasOverflow = container.scrollHeight > container.clientHeight;
+            setNeedsMoreButton(hasOverflow && day.events.length > 0);
+          }
+        };
+        checkOverflow();
+        const timer = setTimeout(checkOverflow, 100);
+        return () => clearTimeout(timer);
+      }
+    }, [day.events.length]);
+    
+    return (
+      <Box
+        bg={day.isToday ? 'blue.900' : 'gray.700'}
+        borderRadius="md"
+        p={3}
+        border={day.isToday ? '2px solid' : '1px solid'}
+        borderColor={day.isToday ? 'blue.400' : 'gray.600'}
+        h="100%"
+        display="flex"
+        flexDirection="column"
+      >
+        <Text
+          color={day.isToday ? 'blue.300' : 'gray.300'}
+          fontSize="sm"
+          fontWeight="bold"
+          mb={1}
+        >
+          {day.dayName}
+        </Text>
+        <Text
+          color={day.isToday ? 'white' : 'gray.200'}
+          fontSize="xl"
+          fontWeight="bold"
+          mb={2}
+        >
+          {day.dayNumber}
+        </Text>
+        <VStack 
+          gap={1} 
+          align="stretch" 
+          flex="1" 
+          overflow="hidden"
+          minH="0"
+        >
+          <Box 
+            ref={containerRef}
+            flex="1" 
+            overflow="auto"
+            w="100%"
+            css={{
+              '&::-webkit-scrollbar': {
+                width: '4px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: '#4A5568',
+                borderRadius: '2px',
+              },
+            }}
+          >
+            {day.events.map((event, idx) => (
+              <Box
+                key={event.id || idx}
+                bg={`${getEventColor(event)}.600`}
+                borderRadius="sm"
+                p={1.5}
+                fontSize="xs"
+                color="white"
+                noOfLines={1}
+                title={event.summary}
+                cursor="pointer"
+                _hover={{ opacity: 0.8 }}
+                mb={idx < day.events.length - 1 ? 1 : 0}
+              >
+                {event.summary || '(제목 없음)'}
+              </Box>
+            ))}
+          </Box>
+          {needsMoreButton && (
+            <Button
+              size="xs"
+              bg="gray.600"
+              color="white"
+              _hover={{ bg: 'gray.500' }}
+              onClick={() => onShowMore(day.date)}
+              flexShrink={0}
+            >
+              +{day.events.length}개 더
+            </Button>
+          )}
+        </VStack>
+      </Box>
+    );
+  };
+
+  // 월별 보기용 날짜 박스 컴포넌트
+  const MonthDayBox = ({ day, onShowMore, getEventColor }) => {
+    const [needsMoreButton, setNeedsMoreButton] = useState(false);
+    const containerRef = useRef(null);
+    
+    useEffect(() => {
+      if (containerRef.current) {
+        const checkOverflow = () => {
+          const container = containerRef.current;
+          if (container) {
+            const hasOverflow = container.scrollHeight > container.clientHeight;
+            setNeedsMoreButton(hasOverflow && day.events.length > 0);
+          }
+        };
+        checkOverflow();
+        const timer = setTimeout(checkOverflow, 100);
+        return () => clearTimeout(timer);
+      }
+    }, [day.events.length]);
+    
+    return (
+      <Box
+        bg={day.isToday ? 'blue.900' : day.isCurrentMonth ? 'gray.700' : 'gray.800'}
+        borderRadius="md"
+        p={2}
+        h="100%"
+        border={day.isToday ? '2px solid' : '1px solid'}
+        borderColor={day.isToday ? 'blue.400' : 'gray.600'}
+        opacity={day.isCurrentMonth ? 1 : 0.5}
+        display="flex"
+        flexDirection="column"
+        minH="0"
+      >
+        <Text
+          color={day.isToday ? 'blue.300' : day.isCurrentMonth ? 'gray.300' : 'gray.500'}
+          fontSize="sm"
+          fontWeight="bold"
+          mb={1}
+          flexShrink={0}
+        >
+          {day.dayNumber}
+        </Text>
+        <VStack 
+          gap={1} 
+          align="stretch" 
+          flex="1" 
+          overflow="hidden"
+          minH="0"
+        >
+          <Box 
+            ref={containerRef}
+            flex="1" 
+            overflow="auto"
+            w="100%"
+            minH="0"
+            css={{
+              '&::-webkit-scrollbar': {
+                width: '4px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: '#4A5568',
+                borderRadius: '2px',
+              },
+            }}
+          >
+            {day.events.map((event, idx) => (
+              <Box
+                key={event.id || idx}
+                bg={`${getEventColor(event)}.600`}
+                borderRadius="sm"
+                p={1}
+                fontSize="xs"
+                color="white"
+                noOfLines={1}
+                title={event.summary}
+                cursor="pointer"
+                _hover={{ opacity: 0.8 }}
+                mb={idx < day.events.length - 1 ? 1 : 0}
+              >
+                {event.summary || '(제목 없음)'}
+              </Box>
+            ))}
+          </Box>
+          {needsMoreButton && (
+            <Button
+              size="xs"
+              bg="gray.600"
+              color="white"
+              _hover={{ bg: 'gray.500' }}
+              onClick={() => onShowMore(day.date)}
+              fontSize="xs"
+              h="20px"
+              px={1}
+              flexShrink={0}
+            >
+              +{day.events.length}개 더
+            </Button>
+          )}
+        </VStack>
+      </Box>
+    );
+  };
+
   // 주별 보기 - 그리드 형태
   const renderWeekView = () => {
     if (!weekGridData) {
       return (
-        <Box h="100%" display="flex" flexDirection="column" bg="gray.800" p={4}>
+        <Box 
+          h="100%" 
+          display="flex" 
+          flexDirection="column" 
+          bg="gray.800" 
+          p={4}
+          opacity={isVisible ? 1 : 0}
+          transition="opacity 0.5s"
+        >
           <Flex justifyContent="space-between" alignItems="center" mb={4}>
             <Text color="white" fontSize="2xl" fontWeight="bold">
               📅 주별 일정
             </Text>
-            <ViewModeButtons />
+            <ActionButtons />
           </Flex>
           <Box flex="1" display="flex" alignItems="center" justifyContent="center">
-            <Text color="gray.400">일정이 없습니다.</Text>
+            {sessionExpired ? (
+              <VStack gap={2}>
+                <Text color="red.300" fontSize="lg" fontWeight="bold">⚠️ 세션 만료</Text>
+                <Text color="gray.400">Google 캘린더 세션이 만료되었습니다.</Text>
+                <Text color="gray.500" fontSize="sm">다시 로그인해주세요.</Text>
+                <Text color="gray.500" fontSize="xs" mt={2}>
+                  (Google OAuth 토큰은 1시간 후 만료됩니다)
+                </Text>
+              </VStack>
+            ) : (
+              <Text color="gray.400">일정이 없습니다.</Text>
+            )}
           </Box>
           {/* Footer */}
           <Box mt={4} textAlign="center" pt={2} borderTop="1px solid" borderColor="gray.700">
@@ -764,7 +1079,15 @@ const GoogleCalendar = () => {
     const monthYear = today.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' });
     
     return (
-      <Box h="100%" display="flex" flexDirection="column" bg="gray.800" p={4}>
+      <Box 
+        h="100%" 
+        display="flex" 
+        flexDirection="column" 
+        bg="gray.800" 
+        p={4}
+        opacity={isVisible ? 1 : 0}
+        transition="opacity 0.5s"
+      >
         <Flex justifyContent="space-between" alignItems="center" mb={4}>
           <VStack align="start" gap={1}>
             <Text color="white" fontSize="2xl" fontWeight="bold">
@@ -774,70 +1097,27 @@ const GoogleCalendar = () => {
               {monthYear}
             </Text>
           </VStack>
-          <ViewModeButtons />
+          <ActionButtons />
         </Flex>
 
-        <Box flex="1" overflow="auto">
-          <Grid templateColumns="repeat(7, 1fr)" gap={2}>
+        <Box flex="1" overflow="hidden" display="flex" alignItems="stretch">
+          <Grid 
+            templateColumns="repeat(7, 1fr)" 
+            gap={2}
+            w="100%"
+            h="100%"
+          >
             {weekGridData.map((day) => (
-              <Box
+              <WeekDayBox 
                 key={day.dateKey}
-                bg={day.isToday ? 'blue.900' : 'gray.700'}
-                borderRadius="md"
-                p={3}
-                border={day.isToday ? '2px solid' : '1px solid'}
-                borderColor={day.isToday ? 'blue.400' : 'gray.600'}
-                minH="150px"
-              >
-                <Text
-                  color={day.isToday ? 'blue.300' : 'gray.300'}
-                  fontSize="sm"
-                  fontWeight="bold"
-                  mb={1}
-                >
-                  {day.dayName}
-                </Text>
-                <Text
-                  color={day.isToday ? 'white' : 'gray.200'}
-                  fontSize="xl"
-                  fontWeight="bold"
-                  mb={2}
-                >
-                  {day.dayNumber}
-                </Text>
-                <VStack gap={1} align="stretch">
-                  {day.events.slice(0, 3).map((event, idx) => (
-                    <Box
-                      key={event.id || idx}
-                      bg={`${getEventColor(event)}.600`}
-                      borderRadius="sm"
-                      p={1.5}
-                      fontSize="xs"
-                      color="white"
-                      noOfLines={1}
-                      title={event.summary}
-                      cursor="pointer"
-                      _hover={{ opacity: 0.8 }}
-                    >
-                      {event.summary || '(제목 없음)'}
-                    </Box>
-                  ))}
-                  {day.events.length > 3 && (
-                    <Button
-                      size="xs"
-                      bg="gray.600"
-                      color="white"
-                      _hover={{ bg: 'gray.500' }}
-                      onClick={() => handleShowMore(day.date)}
-                    >
-                      +{day.events.length - 3}개 더
-                    </Button>
-                  )}
-                </VStack>
-              </Box>
+                day={day}
+                onShowMore={handleShowMore}
+                getEventColor={getEventColor}
+              />
             ))}
           </Grid>
         </Box>
+
         
         {/* Footer */}
         <Box mt={4} textAlign="center" pt={2} borderTop="1px solid" borderColor="gray.700">
@@ -853,15 +1133,34 @@ const GoogleCalendar = () => {
   const renderMonthView = () => {
     if (!monthGridData) {
       return (
-        <Box h="100%" display="flex" flexDirection="column" bg="gray.800" p={4}>
+        <Box 
+          h="100%" 
+          display="flex" 
+          flexDirection="column" 
+          bg="gray.800" 
+          p={4}
+          opacity={isVisible ? 1 : 0}
+          transition="opacity 0.5s"
+        >
           <Flex justifyContent="space-between" alignItems="center" mb={4}>
             <Text color="white" fontSize="2xl" fontWeight="bold">
               📅 월별 일정
             </Text>
-            <ViewModeButtons />
+            <ActionButtons />
           </Flex>
           <Box flex="1" display="flex" alignItems="center" justifyContent="center">
-            <Text color="gray.400">일정이 없습니다.</Text>
+            {sessionExpired ? (
+              <VStack gap={2}>
+                <Text color="red.300" fontSize="lg" fontWeight="bold">⚠️ 세션 만료</Text>
+                <Text color="gray.400">Google 캘린더 세션이 만료되었습니다.</Text>
+                <Text color="gray.500" fontSize="sm">다시 로그인해주세요.</Text>
+                <Text color="gray.500" fontSize="xs" mt={2}>
+                  (Google OAuth 토큰은 1시간 후 만료됩니다)
+                </Text>
+              </VStack>
+            ) : (
+              <Text color="gray.400">일정이 없습니다.</Text>
+            )}
           </Box>
           {/* Footer */}
           <Box mt={4} textAlign="center" pt={2} borderTop="1px solid" borderColor="gray.700">
@@ -878,7 +1177,15 @@ const GoogleCalendar = () => {
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     
     return (
-      <Box h="100%" display="flex" flexDirection="column" bg="gray.800" p={4}>
+      <Box 
+        h="100%" 
+        display="flex" 
+        flexDirection="column" 
+        bg="gray.800" 
+        p={4}
+        opacity={isVisible ? 1 : 0}
+        transition="opacity 0.5s"
+      >
         <Flex justifyContent="space-between" alignItems="center" mb={4}>
           <VStack align="start" gap={1}>
             <Text color="white" fontSize="2xl" fontWeight="bold">
@@ -888,12 +1195,12 @@ const GoogleCalendar = () => {
               {monthYear}
             </Text>
           </VStack>
-          <ViewModeButtons />
+          <ActionButtons />
         </Flex>
 
-        <Box flex="1" overflow="auto">
+        <Box flex="1" overflow="hidden" display="flex" flexDirection="column">
           {/* 요일 헤더 */}
-          <Grid templateColumns="repeat(7, 1fr)" gap={1} mb={2}>
+          <Grid templateColumns="repeat(7, 1fr)" gap={1} mb={2} flexShrink={0}>
             {dayNames.map((dayName) => (
               <Box key={dayName} textAlign="center" p={2}>
                 <Text color="gray.400" fontSize="sm" fontWeight="bold">
@@ -904,65 +1211,28 @@ const GoogleCalendar = () => {
           </Grid>
 
           {/* 주별 그리드 */}
-          <VStack gap={1} align="stretch">
-            {monthGridData.map((week, weekIdx) => (
-              <Grid key={weekIdx} templateColumns="repeat(7, 1fr)" gap={1}>
-                {week.map((day) => (
-                  <Box
-                    key={day.dateKey}
-                    bg={day.isToday ? 'blue.900' : day.isCurrentMonth ? 'gray.700' : 'gray.800'}
-                    borderRadius="md"
-                    p={2}
-                    minH="140px"
-                    border={day.isToday ? '2px solid' : '1px solid'}
-                    borderColor={day.isToday ? 'blue.400' : 'gray.600'}
-                    opacity={day.isCurrentMonth ? 1 : 0.5}
-                  >
-                    <Text
-                      color={day.isToday ? 'blue.300' : day.isCurrentMonth ? 'gray.300' : 'gray.500'}
-                      fontSize="sm"
-                      fontWeight="bold"
-                      mb={1}
-                    >
-                      {day.dayNumber}
-                    </Text>
-                    <VStack gap={1} align="stretch">
-                      {day.events.slice(0, 2).map((event, idx) => (
-                        <Box
-                          key={event.id || idx}
-                          bg={`${getEventColor(event)}.600`}
-                          borderRadius="sm"
-                          p={1}
-                          fontSize="xs"
-                          color="white"
-                          noOfLines={1}
-                          title={event.summary}
-                          cursor="pointer"
-                          _hover={{ opacity: 0.8 }}
-                        >
-                          {event.summary || '(제목 없음)'}
-                        </Box>
-                      ))}
-                      {day.events.length > 2 && (
-                        <Button
-                          size="xs"
-                          bg="gray.600"
-                          color="white"
-                          _hover={{ bg: 'gray.500' }}
-                          onClick={() => handleShowMore(day.date)}
-                          fontSize="xs"
-                          h="20px"
-                          px={1}
-                        >
-                          +{day.events.length - 2}개 더
-                        </Button>
-                      )}
-                    </VStack>
-                  </Box>
-                ))}
-              </Grid>
-            ))}
-          </VStack>
+          <Box flex="1" overflow="hidden" display="flex" flexDirection="column" minH="0">
+            <VStack gap={1} align="stretch" flex="1" h="100%" minH="0">
+              {monthGridData.map((week, weekIdx) => (
+                <Grid 
+                  key={weekIdx} 
+                  templateColumns="repeat(7, 1fr)" 
+                  gap={1}
+                  flex="1"
+                  minH="0"
+                >
+                  {week.map((day) => (
+                    <MonthDayBox
+                      key={day.dateKey}
+                      day={day}
+                      onShowMore={handleShowMore}
+                      getEventColor={getEventColor}
+                    />
+                  ))}
+                </Grid>
+              ))}
+            </VStack>
+          </Box>
         </Box>
         
         {/* Footer */}
