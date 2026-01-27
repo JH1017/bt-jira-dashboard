@@ -111,41 +111,61 @@ const GoogleCalendar = () => {
     init();
   }, []);
 
-  // 로컬 스토리지에서 토큰 확인
+  // 로컬 스토리지에서 토큰 확인 및 만료 시간 체크
   useEffect(() => {
     const savedToken = localStorage.getItem('google_calendar_token');
-    if (savedToken) {
-      setAccessToken(savedToken);
+    const savedExpiresAt = localStorage.getItem('google_calendar_expires_at');
+    
+    if (savedToken && savedExpiresAt) {
+      const expiresAt = Number(savedExpiresAt);
+      const now = Date.now();
+      
+      // 실제로 만료되었을 때만 토큰 제거
+      if (now >= expiresAt) {
+        localStorage.removeItem('google_calendar_token');
+        localStorage.removeItem('google_calendar_expires_at');
+        setSessionExpired(true);
+      } else {
+        setAccessToken(savedToken);
+      }
     }
   }, []);
 
-  // 세션 만료 감지
+  // 세션 만료 감지 (실제 401 에러만 처리)
   useEffect(() => {
     if (error) {
       const errorMessage = error.message || '';
+      // 실제 인증 에러만 세션 만료로 처리 (401, Unauthorized, 인증 만료 등)
       const isAuthError = 
-        errorMessage.includes('인증') || 
-        errorMessage.includes('만료') || 
+        errorMessage.includes('인증이 만료되었습니다') || 
+        errorMessage.includes('인증이 만료') || 
         errorMessage.includes('401') ||
         errorMessage.includes('Unauthorized') ||
-        errorMessage.includes('토큰');
+        (errorMessage.includes('인증') && errorMessage.includes('만료'));
       
       if (isAuthError) {
         setSessionExpired(true);
         setAccessToken(null);
         localStorage.removeItem('google_calendar_token');
+        localStorage.removeItem('google_calendar_expires_at');
       }
     } else {
       setSessionExpired(false);
     }
   }, [error]);
 
-  // Google 로그인
+  // Google 로그인 -> 구글 토큰은 1시간 내외로 만료돼서 만료시간 저장해두기
   const login = useGoogleLogin({
     scope: 'https://www.googleapis.com/auth/calendar.readonly',
     onSuccess: (tokenResponse) => {
+      // expires_in이 없으면 기본값 3600초(1시간) 사용
+      const expiresIn = tokenResponse.expires_in || 3600;
+      const expiresAt = Date.now() + expiresIn * 1000;
+
       setAccessToken(tokenResponse.access_token);
       localStorage.setItem('google_calendar_token', tokenResponse.access_token);
+      localStorage.setItem('google_calendar_expires_at', expiresAt.toString());
+      setSessionExpired(false); // 로그인 성공 시 세션 만료 상태 해제
     },
     onError: (error) => {
       console.error('로그인 실패:', error);
@@ -157,7 +177,54 @@ const GoogleCalendar = () => {
   const handleLogout = () => {
     setAccessToken(null);
     localStorage.removeItem('google_calendar_token');
+    localStorage.removeItem('google_calendar_expires_at');
   };
+
+  // 주기적으로 토큰 만료 시간 체크 및 자동 재로그인 (1분마다)
+  useEffect(() => {
+    if (!accessToken) return;
+    
+    let isRefreshing = false; // 재로그인 중복 방지
+    
+    const checkTokenExpiry = () => {
+      const savedExpiresAt = localStorage.getItem('google_calendar_expires_at');
+      if (!savedExpiresAt) return;
+      
+      const expiresAt = Number(savedExpiresAt);
+      const now = Date.now();
+      const timeUntilExpiry = expiresAt - now;
+      
+      // 만료 직전(5분 전)에 자동으로 재로그인 시도
+      // Google OAuth는 브라우저 세션이 유지되면 팝업 없이 자동 재인증됨
+      if (timeUntilExpiry > 0 && timeUntilExpiry <= 5 * 60 * 1000 && !isRefreshing) {
+        console.log('토큰 만료 직전 - 자동 재로그인 시도...');
+        isRefreshing = true;
+        
+        // 자동 재로그인 시도 (Google 세션이 유지되면 팝업 없이 자동으로 재인증됨)
+        try {
+          login();
+        } catch (error) {
+          console.error('자동 재로그인 실패:', error);
+          isRefreshing = false;
+        }
+      }
+      // 실제로 만료되었을 때만 세션 만료 처리
+      else if (now >= expiresAt) {
+        setSessionExpired(true);
+        setAccessToken(null);
+        localStorage.removeItem('google_calendar_token');
+        localStorage.removeItem('google_calendar_expires_at');
+      }
+    };
+    
+    // 즉시 한 번 체크
+    checkTokenExpiry();
+    
+    // 1분마다 체크
+    const interval = setInterval(checkTokenExpiry, 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [accessToken, login]);
 
   // 한국 시간 기준 오늘 날짜 가져오기
   const getKoreaToday = () => {
@@ -662,7 +729,7 @@ const GoogleCalendar = () => {
         color="white"
         _hover={{ bg: 'gray.500' }}
       >
-        🔄
+        새로고침
       </Button>
       <Button
         onClick={handleLogout}
@@ -717,7 +784,7 @@ const GoogleCalendar = () => {
           {/* Footer */}
           <Box mt={4} textAlign="center" pt={2} borderTop="1px solid" borderColor="gray.700">
             <Text color="gray.500" fontSize="sm">
-              🔄 5분마다 자동 갱신
+              🔄 12시간마다 자동 갱신, 즉시 갱신은 새로고침을 눌러주세요.
             </Text>
           </Box>
         </Box>
@@ -743,10 +810,10 @@ const GoogleCalendar = () => {
       >
         <Flex justifyContent="space-between" alignItems="center" mb={4}>
           <VStack align="start" gap={1}>
-            <Text color="white" fontSize="2xl" fontWeight="bold">
+            <Text color="white" fontSize="25px" fontWeight="bold">
               📅 오늘 일정
             </Text>
-            <Text color="gray.400" fontSize="sm">
+            <Text color="gray.400" fontSize="20px">
               총 {todayEvents.length}개 일정
             </Text>
           </VStack>
@@ -783,29 +850,29 @@ const GoogleCalendar = () => {
                   overflow="hidden"
                 >
                   <Box flex="1" minH="0">
-                    <Text color="white" fontSize="2xl" fontWeight="bold" mb={2} noOfLines={2}>
+                    <Text color="white" fontSize="30px" fontWeight="bold" mb={2} noOfLines={2}>
                       {event.summary || '(제목 없음)'}
                     </Text>
                     <VStack align="start" gap={1}>
                       {!isAllDay && (
-                        <Text color="gray.300" fontSize="lg">
+                        <Text color="gray.300" fontSize="30px">
                           ⏰ {formatTime(startDate)} - {formatTime(endDate)}
                         </Text>
                       )}
                       {isAllDay && (
-                        <Text color="gray.300" fontSize="lg">
+                        <Text color="gray.300" fontSize="30px">
                           ⏰ 종일
                         </Text>
                       )}
                       {event.location && (
-                        <Text color="gray.400" fontSize="md" noOfLines={1}>
+                        <Text color="gray.400" fontSize="30px" noOfLines={1}>
                           📍 {event.location}
                         </Text>
                       )}
                     </VStack>
                   </Box>
                   {event.description && (
-                    <Text color="gray.400" fontSize="md" noOfLines={2} mt={2}>
+                    <Text color="gray.400" fontSize="30px" noOfLines={2} mt={2}>
                       {event.description}
                     </Text>
                   )}
@@ -818,7 +885,7 @@ const GoogleCalendar = () => {
         {/* Footer */}
         <Box mt={4} textAlign="center" pt={2} borderTop="1px solid" borderColor="gray.700">
           <Text color="gray.500" fontSize="sm">
-            🔄 5분마다 자동 갱신
+            🔄 12시간마다 자동 갱신, 즉시 갱신은 새로고침을 눌러주세요.
           </Text>
         </Box>
       </Box>
@@ -858,7 +925,7 @@ const GoogleCalendar = () => {
       >
         <Text
           color={day.isToday ? 'blue.300' : 'gray.300'}
-          fontSize="sm"
+          fontSize="25px"
           fontWeight="bold"
           mb={1}
         >
@@ -900,7 +967,7 @@ const GoogleCalendar = () => {
                 bg={`${getEventColor(event)}.600`}
                 borderRadius="sm"
                 p={1.5}
-                fontSize="xs"
+                fontSize="20px"
                 color="white"
                 noOfLines={1}
                 title={event.summary}
@@ -1000,7 +1067,8 @@ const GoogleCalendar = () => {
                 bg={`${getEventColor(event)}.600`}
                 borderRadius="sm"
                 p={1}
-                fontSize="xs"
+                fontSize="14px"
+                fontWeight={'bold'}
                 color="white"
                 noOfLines={1}
                 title={event.summary}
@@ -1068,7 +1136,7 @@ const GoogleCalendar = () => {
           {/* Footer */}
           <Box mt={4} textAlign="center" pt={2} borderTop="1px solid" borderColor="gray.700">
             <Text color="gray.500" fontSize="sm">
-              🔄 5분마다 자동 갱신
+              🔄 12시간마다 자동 갱신, 즉시 갱신은 새로고침을 눌러주세요.
             </Text>
           </Box>
         </Box>

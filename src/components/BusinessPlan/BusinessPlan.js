@@ -48,29 +48,29 @@ const BusinessPlan = () => {
     if (hasArgo && hasRsm) {
       return (
         <Flex gap={2} justifyContent="center" flexWrap="wrap">
-          <Box bg="#48BB78" color="white" px={3} py={1} borderRadius="md" fontSize="15px" fontWeight="bold">
+          <Box bg="#48BB78" color="white" px={3} py={1} borderRadius="md" fontSize="20px" fontWeight="bold">
             ARGO
           </Box>
-          <Box bg="#4299E1" color="white" px={3} py={1} borderRadius="md" fontSize="15px" fontWeight="bold">
+          <Box bg="#4299E1" color="white" px={3} py={1} borderRadius="md" fontSize="20px" fontWeight="bold">
             RSM
           </Box>
         </Flex>
       );
     } else if (hasArgo) {
       return (
-        <Box bg="#48BB78" color="white" px={3} py={1} borderRadius="md" fontSize="15px" fontWeight="bold" display="inline-block">
+        <Box bg="#48BB78" color="white" px={3} py={1} borderRadius="md" fontSize="20px" fontWeight="bold" display="inline-block">
           ARGO
         </Box>
       );
     } else if (hasRsm) {
       return (
-        <Box bg="#4299E1" color="white" px={3} py={1} borderRadius="md" fontSize="15px" fontWeight="bold" display="inline-block">
+        <Box bg="#4299E1" color="white" px={3} py={1} borderRadius="md" fontSize="20px" fontWeight="bold" display="inline-block">
           RSM
         </Box>
       );
     } else {
       return (
-        <Box bg="gray.500" color="white" px={3} py={1} borderRadius="md" fontSize="15px" display="inline-block">
+        <Box bg="gray.500" color="white" px={3} py={1} borderRadius="md" fontSize="20px" display="inline-block">
           {products}
         </Box>
       );
@@ -82,7 +82,7 @@ const BusinessPlan = () => {
     borderBottom: '1px solid #4A5568',
     borderRight: '1px solid #4A5568',
     verticalAlign: 'middle',
-    fontSize: '16px'
+    fontSize: '20px'
   };
 
   return (
@@ -102,19 +102,19 @@ const BusinessPlan = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #4A5568' }}>
           <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
             <tr style={{ backgroundColor: '#2D3748' }}>
-              <th style={{ ...cellStyle, width: '14%', color: '#E2E8F0', textAlign: 'center', fontSize: '17px' }}>고객사</th>
-              <th style={{ ...cellStyle, width: '14%', color: '#E2E8F0', textAlign: 'center', fontSize: '17px' }}>제품</th>
-              <th style={{ ...cellStyle, width: '10%', color: '#E2E8F0', textAlign: 'center', fontSize: '17px' }}>수량</th>
-              <th style={{ ...cellStyle, width: '14%', color: '#E2E8F0', textAlign: 'center', fontSize: '17px' }}>예상시기</th>
-              <th style={{ ...cellStyle, width: '32%', color: '#E2E8F0', textAlign: 'center', fontSize: '17px' }}>진행현황</th>
-              <th style={{ ...cellStyle, width: '16%', color: '#E2E8F0', textAlign: 'center', fontSize: '17px', borderRight: 'none' }}>비고</th>
+              <th style={{ ...cellStyle, width: '14%', color: '#E2E8F0', textAlign: 'center', fontSize: '25px' }}>고객사</th>
+              <th style={{ ...cellStyle, width: '14%', color: '#E2E8F0', textAlign: 'center', fontSize: '25px' }}>제품</th>
+              <th style={{ ...cellStyle, width: '10%', color: '#E2E8F0', textAlign: 'center', fontSize: '25px' }}>수량</th>
+              <th style={{ ...cellStyle, width: '14%', color: '#E2E8F0', textAlign: 'center', fontSize: '25px' }}>예상시기</th>
+              <th style={{ ...cellStyle, width: '32%', color: '#E2E8F0', textAlign: 'center', fontSize: '25px' }}>진행현황</th>
+              <th style={{ ...cellStyle, width: '16%', color: '#E2E8F0', textAlign: 'center', fontSize: '25px', borderRight: 'none' }}>비고</th>
             </tr>
           </thead>
           <tbody>
             {data.plans.map((plan, index) => (
               <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#1A202C' : '#2D3748' }}>
                 {/* 고객사 */}
-                <td style={{ ...cellStyle, color: '#63B3ED', textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
+                <td style={{ ...cellStyle, color: '#63B3ED', textAlign: 'center', fontWeight: 'bold', fontSize: '25px' }}>
                   {plan.customer}
                 </td>
                 {/* 제품 */}
@@ -122,18 +122,18 @@ const BusinessPlan = () => {
                   {renderProducts(plan.products)}
                 </td>
                 {/* 수량 */}
-                <td style={{ ...cellStyle, color: '#F6E05E', textAlign: 'center', fontWeight: 'bold', fontSize: '17px' }}>
+                <td style={{ ...cellStyle, color: '#F6E05E', textAlign: 'center', fontWeight: 'bold', fontSize: '23px' }}>
                   {plan.quantity}
                 </td>
                 {/* 예상시기 */}
-                <td style={{ ...cellStyle, color: '#E2E8F0', textAlign: 'center', fontSize: '16px' }}>
+                <td style={{ ...cellStyle, color: '#E2E8F0', textAlign: 'center', fontSize: '23px' }}>
                   {plan.expectedDate}
                 </td>
                 {/* 진행현황 */}
                 <td style={{ ...cellStyle, color: '#A0AEC0', textAlign: 'left', padding: '12px 16px' }}>
                   {plan.progress && plan.progress.filter(p => p && p.trim()).length > 0 ? (
                     plan.progress.filter(p => p && p.trim()).map((item, idx) => (
-                      <Box key={idx} mb={1} fontSize="15px" lineHeight="1.4">
+                      <Box key={idx} mb={1} fontSize="22px" lineHeight="1.4">
                         • {item}
                       </Box>
                     ))
@@ -142,7 +142,7 @@ const BusinessPlan = () => {
                   )}
                 </td>
                 {/* 비고 */}
-                <td style={{ ...cellStyle, color: '#CBD5E0', textAlign: 'left', borderRight: 'none', fontSize: '14px' }}>
+                <td style={{ ...cellStyle, color: '#CBD5E0', textAlign: 'left', borderRight: 'none', fontSize: '20px' }}>
                   {plan.remarks && plan.remarks.trim() ? plan.remarks : '-'}
                 </td>
               </tr>

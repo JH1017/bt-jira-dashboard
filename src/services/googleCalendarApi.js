@@ -96,6 +96,15 @@ export const getCalendarEventsByDateRange = async (startDate, endDate, maxResult
     return response.result.items || [];
   } catch (error) {
     console.error('캘린더 이벤트 가져오기 실패:', error);
+    
+    // 401 에러인 경우 명확한 에러 메시지와 함께 throw
+    if (error.status === 401 || (error.result && error.result.error && error.result.error.code === 401)) {
+      if (gapi && gapi.client) {
+        gapi.client.setToken(null);
+      }
+      throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+    }
+    
     throw error;
   }
 };
