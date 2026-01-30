@@ -34,7 +34,7 @@
       "status": "active"
     },
     {
-      "name": "한국의약품안전관리원",
+      "name": "한국의약품안전관리원-의약안전정보관리시스템",
       "members": ["장승국"],
       "status": "active"
     },
@@ -51,6 +51,11 @@
     {
       "name": "하나은행-IT서비스데스크 재구축",
       "members": ["이재우"],
+      "status": "active"
+    },
+    {
+      "name": "우리카드 - 디지털ARS",
+      "members": ["장승국","박시용"],
       "status": "active"
     }
   ]

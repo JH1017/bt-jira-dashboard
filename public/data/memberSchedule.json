@@ -11,7 +11,8 @@
       {
         "name": "박시용",
         "projects": [
-          { "name": "NH농협은행-차세대", "start": 1, "end": 8 }
+          { "name": "NH농협은행-차세대", "start": 1, "end": 8 },
+          { "name": "우리카드 - 디지털ARS", "start": 3, "end": 5 }
         ]
       },
       {
@@ -40,8 +41,9 @@
       {
         "name": "장승국",
         "projects": [
-          { "name": "한국의약품안전관리원", "start": 3, "end": 5 },
-          { "name": "BNK부산은행-보이스봇", "start": 1, "end": 7 }
+          { "name": "한국의약품안전관리원-의약안전정보관리시스템", "start": 3, "end": 5 },
+          { "name": "BNK부산은행-보이스봇", "start": 1, "end": 7 },
+          { "name": "우리카드 - 디지털ARS", "start": 3, "end": 5 }
         ]
       },
       {

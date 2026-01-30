@@ -43,6 +43,7 @@ const MemberSchedule = () => {
   const currentMonth = new Date().getMonth() + 1; // 1~12
   const currentDay = new Date().getDate();
   const activeColor = '#5A9FBF';
+  const completedColor = '#4A5568'; // 완료된 프로젝트 색상
 
   const cellStyle = {
     padding: '6px 8px',
@@ -69,6 +70,11 @@ const MemberSchedule = () => {
     return team.members.reduce((sum, member) => sum + Math.max(member.projects.length, 1), 0);
   };
 
+  // 프로젝트가 완료되었는지 확인 (종료월이 현재월보다 이전인 경우)
+  const isProjectCompleted = (endMonth) => {
+    return endMonth < currentMonth;
+  };
+
   const renderTeam = (team, teamName) => {
     const totalRows = getTotalRows(team);
     const rows = [];
@@ -79,6 +85,7 @@ const MemberSchedule = () => {
 
       member.projects.forEach((project, projectIndex) => {
         const isFirstRowOfMember = projectIndex === 0;
+        const isCompleted = isProjectCompleted(project.end);
 
         rows.push(
           <tr key={`${teamName}-${memberIndex}-${projectIndex}`} style={{ backgroundColor: '#1A202C' }}>
@@ -108,13 +115,24 @@ const MemberSchedule = () => {
             {/* 프로젝트명 */}
             <td style={{ 
               ...cellStyle, 
-              color: '#A0AEC0',
+              color: isCompleted ? '#718096' : '#A0AEC0',
               textAlign: 'left',
               paddingLeft: '10px',
               width: '200px',
-              fontSize: '15px'
+              fontSize: '15px',
+              textDecoration: isCompleted ? 'line-through' : 'none'
             }}>
               {project.name || '-'}
+              {isCompleted && (
+                <span style={{
+                  marginLeft: '8px',
+                  fontSize: '12px',
+                  color: '#68D391',
+                  fontWeight: 'bold'
+                }}>
+                  ✓ 완료
+                </span>
+              )}
             </td>
             {/* 월별 셀 */}
             {months.map((_, monthIndex) => {
@@ -127,7 +145,10 @@ const MemberSchedule = () => {
                   key={monthIndex} 
                   style={{ 
                     ...cellStyle,
-                    backgroundColor: isActive ? activeColor : 'transparent',
+                    backgroundColor: isActive 
+                      ? (isCompleted ? completedColor : activeColor)
+                      : 'transparent',
+                    opacity: isActive && isCompleted ? 0.5 : 1,
                     width: '50px',
                     position: 'relative'
                   }}
@@ -260,6 +281,31 @@ const MemberSchedule = () => {
         <Text color="gray.400" fontSize="sm">
           📍 오늘: {currentMonth}월 {currentDay}일
         </Text>
+        <Box display="flex" gap={3}>
+          <Text color="gray.400" fontSize="sm">
+            <span style={{ 
+              display: 'inline-block', 
+              width: '12px', 
+              height: '12px', 
+              backgroundColor: activeColor,
+              marginRight: '4px',
+              verticalAlign: 'middle'
+            }}></span>
+            진행중
+          </Text>
+          <Text color="gray.400" fontSize="sm">
+            <span style={{ 
+              display: 'inline-block', 
+              width: '12px', 
+              height: '12px', 
+              backgroundColor: completedColor,
+              opacity: 0.5,
+              marginRight: '4px',
+              verticalAlign: 'middle'
+            }}></span>
+            완료
+          </Text>
+        </Box>
         <Text color="gray.500" fontSize="sm">
           🔄 5분마다 데이터 갱신
         </Text>
