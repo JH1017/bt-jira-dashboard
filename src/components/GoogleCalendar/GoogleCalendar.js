@@ -23,6 +23,54 @@ const GoogleCalendar = () => {
   const [sessionExpired, setSessionExpired] = useState(false);
   const { data: events, refetch, isLoading: isFetching, error } = useGoogleCalendar(accessToken, viewMode);
 
+  // ===== 추가: 하루에 한 번 로그인 시도 설정 =====
+  const LOGIN_HOUR = 6; // 로그인 시도 시간 (0-23시, 예: 6 = 오전 6시)
+  const LOGIN_MINUTE = 0; // 로그인 시도 분 (0-59)
+
+  // 오늘 이미 로그인 시도했는지 확인
+  const hasTriedLoginToday = () => {
+    const lastLoginAttempt = localStorage.getItem('google_calendar_last_login_attempt');
+    if (!lastLoginAttempt) return false;
+    
+    const lastAttemptDate = new Date(lastLoginAttempt);
+    const today = new Date();
+    
+    // 같은 날짜인지 확인
+    return lastAttemptDate.getDate() === today.getDate() &&
+           lastAttemptDate.getMonth() === today.getMonth() &&
+           lastAttemptDate.getFullYear() === today.getFullYear();
+  };
+
+  // 로그인 시도 시간 기록
+  const recordLoginAttempt = () => {
+    localStorage.setItem('google_calendar_last_login_attempt', new Date().toISOString());
+  };
+
+  // 다음 로그인 시도 시간 계산
+  const getNextLoginTime = () => {
+    const now = new Date();
+    const next = new Date();
+    next.setHours(LOGIN_HOUR, LOGIN_MINUTE, 0, 0);
+    
+    // 오늘의 로그인 시간이 지났으면 내일로 설정
+    if (now >= next) {
+      next.setDate(next.getDate() + 1);
+    }
+    
+    return next;
+  };
+
+  // 현재 시간이 로그인 시도 시간인지 확인
+  const isLoginTime = () => {
+    const now = new Date();
+    const targetTime = new Date();
+    targetTime.setHours(LOGIN_HOUR, LOGIN_MINUTE, 0, 0);
+    
+    // 현재 시간이 목표 시간의 ±5분 이내인지 확인
+    const diff = Math.abs(now - targetTime);
+    return diff < 5 * 60 * 1000; // 5분 = 300,000ms
+  };
+
 // 디버깅: events 데이터 상세 확인
   useEffect(() => {
     if (events && events.length > 0) {
@@ -166,10 +214,16 @@ const GoogleCalendar = () => {
       localStorage.setItem('google_calendar_token', tokenResponse.access_token);
       localStorage.setItem('google_calendar_expires_at', expiresAt.toString());
       setSessionExpired(false); // 로그인 성공 시 세션 만료 상태 해제
+      
+      // 로그인 시도 기록
+      recordLoginAttempt();
     },
     onError: (error) => {
       console.error('로그인 실패:', error);
       alert('구글 캘린더 로그인에 실패했습니다: ' + (error.error || '알 수 없는 오류'));
+      
+      // 로그인 실패해도 시도는 기록 (무한 재시도 방지)
+      recordLoginAttempt();
     },
   });
 
@@ -180,11 +234,48 @@ const GoogleCalendar = () => {
     localStorage.removeItem('google_calendar_expires_at');
   };
 
-  // 주기적으로 토큰 만료 시간 체크 및 자동 재로그인 (1분마다)
+  // ===== 수정: 하루에 한 번 특정 시간에만 자동 로그인 시도 =====
+  useEffect(() => {
+    // 토큰이 이미 있으면 자동 로그인 시도 안함
+    if (accessToken) return;
+    
+    let isRefreshing = false;
+    
+    const checkAndLogin = () => {
+      // 이미 오늘 로그인 시도했으면 건너뛰기
+      if (hasTriedLoginToday()) {
+        console.log('오늘 이미 로그인 시도함. 다음 시도 시간:', getNextLoginTime().toLocaleString('ko-KR'));
+        return;
+      }
+      
+      // 현재 시간이 로그인 시간이고, 아직 시도하지 않았으면 로그인 시도
+      if (isLoginTime() && !isRefreshing) {
+        console.log('자동 로그인 시도 시간입니다.');
+        isRefreshing = true;
+        
+        try {
+          login();
+        } catch (error) {
+          console.error('자동 로그인 실패:', error);
+          isRefreshing = false;
+        }
+      }
+    };
+    
+    // 즉시 한 번 체크
+    checkAndLogin();
+    
+    // 1분마다 체크
+    const interval = setInterval(checkAndLogin, 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [accessToken, login]);
+
+  // ===== 수정: 토큰 만료 시 자동 재로그인 시도 (하루 한 번 제한 적용) =====
   useEffect(() => {
     if (!accessToken) return;
     
-    let isRefreshing = false; // 재로그인 중복 방지
+    let isRefreshing = false;
     
     const checkTokenExpiry = () => {
       const savedExpiresAt = localStorage.getItem('google_calendar_expires_at');
@@ -195,12 +286,16 @@ const GoogleCalendar = () => {
       const timeUntilExpiry = expiresAt - now;
       
       // 만료 직전(5분 전)에 자동으로 재로그인 시도
-      // Google OAuth는 브라우저 세션이 유지되면 팝업 없이 자동 재인증됨
+      // 단, 오늘 이미 로그인 시도했으면 건너뛰기
       if (timeUntilExpiry > 0 && timeUntilExpiry <= 5 * 60 * 1000 && !isRefreshing) {
+        if (hasTriedLoginToday()) {
+          console.log('토큰 만료 직전이지만 오늘 이미 로그인 시도함. 다음 시도:', getNextLoginTime().toLocaleString('ko-KR'));
+          return;
+        }
+        
         console.log('토큰 만료 직전 - 자동 재로그인 시도...');
         isRefreshing = true;
         
-        // 자동 재로그인 시도 (Google 세션이 유지되면 팝업 없이 자동으로 재인증됨)
         try {
           login();
         } catch (error) {
@@ -645,6 +740,7 @@ const GoogleCalendar = () => {
   }
 
   if (!accessToken) {
+    const nextLoginTime = getNextLoginTime();
     return (
       <Box h="100%" display="flex" alignItems="center" justifyContent="center" bg="gray.800" p={4}>
         <VStack gap={4}>
@@ -654,8 +750,17 @@ const GoogleCalendar = () => {
           <Text color="gray.400" fontSize="md" textAlign="center">
             구글 캘린더를 연동하여 일정을 확인할 수 있습니다.
           </Text>
+          <Text color="gray.500" fontSize="sm" textAlign="center">
+            다음 자동 로그인 시도: {nextLoginTime.toLocaleString('ko-KR')}
+          </Text>
+          <Text color="gray.500" fontSize="xs" textAlign="center">
+            (매일 오전 {LOGIN_HOUR}시 {LOGIN_MINUTE}분에 자동 로그인 시도)
+          </Text>
           <Button
-            onClick={() => login()}
+            onClick={() => {
+              recordLoginAttempt(); // 수동 로그인도 기록
+              login();
+            }}
             bg="blue.500"
             color="white"
             size="lg"
@@ -768,9 +873,9 @@ const GoogleCalendar = () => {
                 <>
                   <Text color="red.300" fontSize="xl" fontWeight="bold">⚠️ 세션 만료</Text>
                   <Text color="gray.400">Google 캘린더 세션이 만료되었습니다.</Text>
-                  <Text color="gray.500" fontSize="sm">다시 로그인해주세요.</Text>
+                  <Text color="gray.500" fontSize="sm">다음 자동 로그인: {getNextLoginTime().toLocaleString('ko-KR')}</Text>
                   <Text color="gray.500" fontSize="xs" mt={2}>
-                    (Google OAuth 토큰은 1시간 후 만료됩니다)
+                    (매일 오전 {LOGIN_HOUR}시 {LOGIN_MINUTE}분에 자동 로그인 시도)
                   </Text>
                 </>
               ) : (
@@ -1124,9 +1229,9 @@ const GoogleCalendar = () => {
               <VStack gap={2}>
                 <Text color="red.300" fontSize="lg" fontWeight="bold">⚠️ 세션 만료</Text>
                 <Text color="gray.400">Google 캘린더 세션이 만료되었습니다.</Text>
-                <Text color="gray.500" fontSize="sm">다시 로그인해주세요.</Text>
+                <Text color="gray.500" fontSize="sm">다음 자동 로그인: {getNextLoginTime().toLocaleString('ko-KR')}</Text>
                 <Text color="gray.500" fontSize="xs" mt={2}>
-                  (Google OAuth 토큰은 1시간 후 만료됩니다)
+                  (매일 오전 {LOGIN_HOUR}시 {LOGIN_MINUTE}분에 자동 로그인 시도)
                 </Text>
               </VStack>
             ) : (
@@ -1221,9 +1326,9 @@ const GoogleCalendar = () => {
               <VStack gap={2}>
                 <Text color="red.300" fontSize="lg" fontWeight="bold">⚠️ 세션 만료</Text>
                 <Text color="gray.400">Google 캘린더 세션이 만료되었습니다.</Text>
-                <Text color="gray.500" fontSize="sm">다시 로그인해주세요.</Text>
+                <Text color="gray.500" fontSize="sm">다음 자동 로그인: {getNextLoginTime().toLocaleString('ko-KR')}</Text>
                 <Text color="gray.500" fontSize="xs" mt={2}>
-                  (Google OAuth 토큰은 1시간 후 만료됩니다)
+                  (매일 오전 {LOGIN_HOUR}시 {LOGIN_MINUTE}분에 자동 로그인 시도)
                 </Text>
               </VStack>
             ) : (
