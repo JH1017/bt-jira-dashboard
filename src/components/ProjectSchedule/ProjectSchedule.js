@@ -9,6 +9,14 @@ const ProjectSchedule = () => {
 
   const sortSchedules = (data) => {
     return [...data].sort((a, b) => {
+      // 1단계: 확정 여부로 정렬 (확정된 건이 최우선)
+      const isConfirmedA = a.manager === '확정' ? 0 : 1;
+      const isConfirmedB = b.manager === '확정' ? 0 : 1;
+      if (isConfirmedA !== isConfirmedB) {
+        return isConfirmedA - isConfirmedB;
+      }
+
+      // 2단계: 상태별 정렬 (진행→무관→취소)
       const getStatusOrder = (item) => {
         if (item.canceled) return 2;
         if (item.irrelevant) return 1;
@@ -19,11 +27,15 @@ const ProjectSchedule = () => {
       if (statusA !== statusB) {
         return statusA - statusB;
       }
+
+      // 3단계: 등급별 정렬 (H→M→L)
       const gradeA = gradeOrder[a.grade] || 99;
       const gradeB = gradeOrder[b.grade] || 99;
       if (gradeA !== gradeB) {
         return gradeA - gradeB;
       }
+
+      // 4단계: 예정일자별 정렬
       return (a.schedule || '').localeCompare(b.schedule || '');
     });
   };
@@ -77,11 +89,12 @@ const ProjectSchedule = () => {
   const canceledCount = schedules.filter(item => item.canceled).length;
   const irrelevantCount = schedules.filter(item => item.irrelevant && !item.canceled).length;
   const activeCount = schedules.length - canceledCount - irrelevantCount;
+  const confirmedCount = schedules.filter(item => item.manager === '확정').length;
 
   return (
     <Box h="100%" display="flex" flexDirection="column" bg="gray.800" p={4}>
       <Text color="white" fontSize="xl" fontWeight="bold" mb={4} textAlign="center">
-        📅 프로젝트 예정 (총 {schedules.length}건 | 진행 {activeCount}건 | 무관 {irrelevantCount}건 | 취소 {canceledCount}건)
+        📅 프로젝트 예정 (총 {schedules.length}건 | 확정 {confirmedCount}건 | 진행 {activeCount}건 | 무관 {irrelevantCount}건 | 취소 {canceledCount}건)
       </Text>
 
       <Box flex="1" overflow="auto">
@@ -104,94 +117,119 @@ const ProjectSchedule = () => {
             </tr>
           </thead>
           <tbody>
-            {schedules.map((item, index) => (
-              <tr 
-                key={index} 
-                style={{ 
-                  backgroundColor: item.canceled 
-                    ? '#3D2929' 
-                    : item.irrelevant 
-                      ? '#2D2D3D'
-                      : (index % 2 === 0 ? '#1A202C' : '#2D3748'),
-                  opacity: item.canceled ? 0.7 : item.irrelevant ? 0.8 : 1
-                }}
-              >
-                <td style={{ 
-                  ...cellStyle, 
-                  color: '#E2E8F0',
-                  textDecoration: item.canceled ? 'line-through' : 'none'
-                }}>{index + 1}</td>
-                <td style={{ 
-                  ...cellStyle, 
-                  color: '#E2E8F0', 
-                  textAlign: 'left',
-                  textDecoration: item.canceled ? 'line-through' : 'none'
-                }}>{item.customer}</td>
-                <td style={{ 
-                  ...cellStyle, 
-                  color: '#E2E8F0', 
-                  textAlign: 'left',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  textDecoration: item.canceled ? 'line-through' : 'none'
-                }} title={item.project}>{item.project}</td>
-                <td style={{ ...cellStyle }}>
-                  <span style={{
-                    backgroundColor: item.canceled ? '#718096' : getGradeColor(item.grade),
-                    color: 'white',
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    fontWeight: 'bold',
+            {schedules.map((item, index) => {
+              const isConfirmed = item.manager === '확정';
+              
+              return (
+                <tr 
+                  key={index} 
+                  style={{ 
+                    backgroundColor: item.canceled 
+                      ? '#3D2929' 
+                      : item.irrelevant 
+                        ? '#2D2D3D'
+                        : isConfirmed
+                          ? '#1a4d2e'
+                          : (index % 2 === 0 ? '#1A202C' : '#2D3748'),
+                    opacity: item.canceled ? 0.7 : item.irrelevant ? 0.8 : 1,
+                    borderLeft: isConfirmed ? '4px solid #48BB78' : 'none',
+                    fontWeight: isConfirmed ? 'bold' : 'normal'
+                  }}
+                >
+                  <td style={{ 
+                    ...cellStyle, 
+                    color: isConfirmed ? '#9AE6B4' : '#E2E8F0',
+                    textDecoration: item.canceled ? 'line-through' : 'none'
+                  }}>{index + 1}</td>
+                  <td style={{ 
+                    ...cellStyle, 
+                    color: isConfirmed ? '#9AE6B4' : '#E2E8F0', 
+                    textAlign: 'left',
+                    textDecoration: item.canceled ? 'line-through' : 'none'
+                  }}>{item.customer}</td>
+                  <td style={{ 
+                    ...cellStyle, 
+                    color: isConfirmed ? '#9AE6B4' : '#E2E8F0', 
+                    textAlign: 'left',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    textDecoration: item.canceled ? 'line-through' : 'none'
+                  }} title={item.project}>
+                    {isConfirmed && '✓ '}{item.project}
+                  </td>
+                  <td style={{ ...cellStyle }}>
+                    <span style={{
+                      backgroundColor: item.canceled ? '#718096' : getGradeColor(item.grade),
+                      color: 'white',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontWeight: 'bold',
+                      textDecoration: item.canceled ? 'line-through' : 'none'
+                    }}>
+                      {item.grade}
+                    </span>
+                  </td>
+                  <td style={{ 
+                    ...cellStyle, 
+                    color: isConfirmed ? '#9AE6B4' : '#E2E8F0',
+                    textDecoration: item.canceled ? 'line-through' : 'none'
+                  }}>{item.schedule}</td>
+                  <td style={{ 
+                    ...cellStyle, 
+                    color: isConfirmed ? '#48BB78' : '#A0AEC0',
                     textDecoration: item.canceled ? 'line-through' : 'none'
                   }}>
-                    {item.grade}
-                  </span>
-                </td>
-                <td style={{ 
-                  ...cellStyle, 
-                  color: '#E2E8F0',
-                  textDecoration: item.canceled ? 'line-through' : 'none'
-                }}>{item.schedule}</td>
-                <td style={{ 
-                  ...cellStyle, 
-                  color: '#A0AEC0',
-                  textDecoration: item.canceled ? 'line-through' : 'none'
-                }}>{item.manager}</td>
-                <td style={{ ...cellStyle }}>
-                  <span style={{
-                    backgroundColor: item.irrelevant ? '#805AD5' : '#4A5568',
-                    color: 'white',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontSize: '12px'
+                    {isConfirmed && (
+                      <span style={{
+                        backgroundColor: '#48BB78',
+                        color: 'white',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontWeight: 'bold',
+                        fontSize: '12px',
+                        marginRight: '4px'
+                      }}>
+                        ✓
+                      </span>
+                    )}
+                    {item.manager}
+                  </td>
+                  <td style={{ ...cellStyle }}>
+                    <span style={{
+                      backgroundColor: item.irrelevant ? '#805AD5' : '#4A5568',
+                      color: 'white',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontSize: '12px'
+                    }}>
+                      {item.irrelevant ? 'Y' : 'N'}
+                    </span>
+                  </td>
+                  <td style={{ 
+                    ...cellStyle, 
+                    borderRight: 'none'
                   }}>
-                    {item.irrelevant ? 'Y' : 'N'}
-                  </span>
-                </td>
-                <td style={{ 
-                  ...cellStyle, 
-                  borderRight: 'none'
-                }}>
-                  <span style={{
-                    backgroundColor: item.canceled ? '#E53E3E' : '#38A169',
-                    color: 'white',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontSize: '12px'
-                  }}>
-                    {item.canceled ? '취소' : '진행'}
-                  </span>
-                </td>
-              </tr>
-            ))}
+                    <span style={{
+                      backgroundColor: item.canceled ? '#E53E3E' : '#38A169',
+                      color: 'white',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontSize: '12px'
+                    }}>
+                      {item.canceled ? '취소' : '진행'}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </Box>
 
       <Box mt={2} textAlign="center">
         <Text color="gray.500" fontSize="sm">
-          🔄 5분마다 데이터 갱신 | 정렬: 정상→무관→취소 → 등급(H→M→L) → 예정일자
+          🔄 5분마다 데이터 갱신 | 정렬: 확정→정상→무관→취소 → 등급(H→M→L) → 예정일자
         </Text>
       </Box>
     </Box>

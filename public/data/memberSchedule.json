@@ -5,7 +5,9 @@
       {
         "name": "이재우",
         "projects": [
-          { "name": "하나은행-IT서비스데스크 재구축", "start": 1, "end": 5 }
+          { "name": "하나은행-IT서비스데스크 재구축", "start": 1, "end": 5 },
+          { "name": "SKT/B - 차세대 콜 인프라 구축", "start": 3, "end": 12 }
+
         ]
       },
       {
@@ -21,14 +23,16 @@
           { "name": "군인공제회C&C-나라사랑카드", "start": 1, "end": 1 },
           { "name": "위아공작기계-IPCC", "start": 2, "end": 5 },
           { "name": "토스뱅크-IPCC", "start": 1, "end": 2 },
-          { "name": "BNK부산은행-보이스봇", "start": 1, "end": 7 }
+          { "name": "BNK부산은행-보이스봇", "start": 1, "end": 7 },
+          { "name": "SKT/B - 차세대 콜 인프라 구축", "start": 3, "end": 12 }
         ]
       },
       {
         "name": "김형준",
         "projects": [
           { "name": "한국증권금융-콜센터", "start": 1, "end": 1 },
-          { "name": "우리은행-티켓플랫폼", "start": 1, "end": 4 }
+          { "name": "우리은행-티켓플랫폼", "start": 1, "end": 4 },
+          { "name": "SKT/B - 차세대 콜 인프라 구축", "start": 3, "end": 12 }
         ]
       },
       {
@@ -50,15 +54,17 @@
         "name": "박상명",
         "projects": [
           { "name": "토스뱅크-IPCC", "start": 1, "end": 2 },
-          { "name": "우리은행-티켓플랫폼", "start": 1, "end": 4 }
+          { "name": "우리은행-티켓플랫폼", "start": 1, "end": 4 },
+          { "name": "SKT/B - 차세대 콜 인프라 구축", "start": 3, "end": 12 }
         ]
       },
       {
         "name": "강대호",
         "projects": [
-          { "name": "NH농협은행-차세대", "start": 1, "end": 8 }
+          { "name": "NH농협은행-차세대", "start": 1, "end": 8 },
+          { "name": "SKT/B - 차세대 콜 인프라 구축", "start": 3, "end": 12 }
         ]
-      }
+      }      
     ]
   },
   "team2": {
@@ -67,14 +73,16 @@
       {
         "name": "윤건용",
         "projects": [
-          { "name": "한국증권금융-콜센터", "start": 1, "end": 1 }
+          { "name": "한국증권금융-콜센터", "start": 1, "end": 1 },
+          { "name": "SKT/B - 차세대 콜 인프라 구축", "start": 3, "end": 12 }
         ]
       },
       {
         "name": "박영서",
         "projects": [
           { "name": "NH농협은행-차세대", "start": 1, "end": 8 },
-          { "name": "토스뱅크-IPCC", "start": 2, "end": 2 }
+          { "name": "토스뱅크-IPCC", "start": 2, "end": 2 },
+          { "name": "SKT/B - 차세대 콜 인프라 구축", "start": 3, "end": 12 }
         ]
       },
       {
@@ -100,7 +108,8 @@
       {
         "name": "강준환",
         "projects": [
-          { "name": "한국증권금융-콜센터", "start": 1, "end": 1 }
+          { "name": "한국증권금융-콜센터", "start": 1, "end": 1 },
+          { "name": "SKT/B - 차세대 콜 인프라 구축", "start": 3, "end": 12 }
         ]
       }
     ]
