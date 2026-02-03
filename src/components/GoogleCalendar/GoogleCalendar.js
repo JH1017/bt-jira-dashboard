@@ -23,55 +23,7 @@ const GoogleCalendar = () => {
   const [sessionExpired, setSessionExpired] = useState(false);
   const { data: events, refetch, isLoading: isFetching, error } = useGoogleCalendar(accessToken, viewMode);
 
-  // ===== 추가: 하루에 한 번 로그인 시도 설정 =====
-  const LOGIN_HOUR = 6; // 로그인 시도 시간 (0-23시, 예: 6 = 오전 6시)
-  const LOGIN_MINUTE = 0; // 로그인 시도 분 (0-59)
-
-  // 오늘 이미 로그인 시도했는지 확인
-  const hasTriedLoginToday = () => {
-    const lastLoginAttempt = localStorage.getItem('google_calendar_last_login_attempt');
-    if (!lastLoginAttempt) return false;
-    
-    const lastAttemptDate = new Date(lastLoginAttempt);
-    const today = new Date();
-    
-    // 같은 날짜인지 확인
-    return lastAttemptDate.getDate() === today.getDate() &&
-           lastAttemptDate.getMonth() === today.getMonth() &&
-           lastAttemptDate.getFullYear() === today.getFullYear();
-  };
-
-  // 로그인 시도 시간 기록
-  const recordLoginAttempt = () => {
-    localStorage.setItem('google_calendar_last_login_attempt', new Date().toISOString());
-  };
-
-  // 다음 로그인 시도 시간 계산
-  const getNextLoginTime = () => {
-    const now = new Date();
-    const next = new Date();
-    next.setHours(LOGIN_HOUR, LOGIN_MINUTE, 0, 0);
-    
-    // 오늘의 로그인 시간이 지났으면 내일로 설정
-    if (now >= next) {
-      next.setDate(next.getDate() + 1);
-    }
-    
-    return next;
-  };
-
-  // 현재 시간이 로그인 시도 시간인지 확인
-  const isLoginTime = () => {
-    const now = new Date();
-    const targetTime = new Date();
-    targetTime.setHours(LOGIN_HOUR, LOGIN_MINUTE, 0, 0);
-    
-    // 현재 시간이 목표 시간의 ±5분 이내인지 확인
-    const diff = Math.abs(now - targetTime);
-    return diff < 5 * 60 * 1000; // 5분 = 300,000ms
-  };
-
-// 디버깅: events 데이터 상세 확인
+  // 디버깅: events 데이터 상세 확인
   useEffect(() => {
     if (events && events.length > 0) {
       console.log('=== Google Calendar Events 상세 디버깅 ===');
@@ -111,7 +63,6 @@ const GoogleCalendar = () => {
     }
   }, [events]);
 
-
   // viewMode 변경 시 localStorage에 저장
   const handleViewModeChange = (mode) => {
     setViewMode(mode);
@@ -140,8 +91,6 @@ const GoogleCalendar = () => {
     return () => clearInterval(interval);
   }, [accessToken]);
 
-  // ... existing code (초기화, 로그인, 로그아웃, 유틸 함수들) ...
-
   // 컴포넌트 마운트 시 Google API 초기화
   useEffect(() => {
     const init = async () => {
@@ -159,71 +108,24 @@ const GoogleCalendar = () => {
     init();
   }, []);
 
-  // 로컬 스토리지에서 토큰 확인 및 만료 시간 체크
-  useEffect(() => {
-    const savedToken = localStorage.getItem('google_calendar_token');
-    const savedExpiresAt = localStorage.getItem('google_calendar_expires_at');
-    
-    if (savedToken && savedExpiresAt) {
-      const expiresAt = Number(savedExpiresAt);
-      const now = Date.now();
-      
-      // 실제로 만료되었을 때만 토큰 제거
-      if (now >= expiresAt) {
-        localStorage.removeItem('google_calendar_token');
-        localStorage.removeItem('google_calendar_expires_at');
-        setSessionExpired(true);
-      } else {
-        setAccessToken(savedToken);
-      }
-    }
-  }, []);
-
-  // 세션 만료 감지 (실제 401 에러만 처리)
-  useEffect(() => {
-    if (error) {
-      const errorMessage = error.message || '';
-      // 실제 인증 에러만 세션 만료로 처리 (401, Unauthorized, 인증 만료 등)
-      const isAuthError = 
-        errorMessage.includes('인증이 만료되었습니다') || 
-        errorMessage.includes('인증이 만료') || 
-        errorMessage.includes('401') ||
-        errorMessage.includes('Unauthorized') ||
-        (errorMessage.includes('인증') && errorMessage.includes('만료'));
-      
-      if (isAuthError) {
-        setSessionExpired(true);
-        setAccessToken(null);
-        localStorage.removeItem('google_calendar_token');
-        localStorage.removeItem('google_calendar_expires_at');
-      }
-    } else {
-      setSessionExpired(false);
-    }
-  }, [error]);
-
-  // Google 로그인 -> 구글 토큰은 1시간 내외로 만료돼서 만료시간 저장해두기
+  // Google 로그인
   const login = useGoogleLogin({
     scope: 'https://www.googleapis.com/auth/calendar.readonly',
     onSuccess: (tokenResponse) => {
-      // expires_in이 없으면 기본값 3600초(1시간) 사용
       const expiresIn = tokenResponse.expires_in || 3600;
       const expiresAt = Date.now() + expiresIn * 1000;
+
+      console.log('토큰 갱신 성공. 만료 예정:', new Date(expiresAt).toLocaleString('ko-KR'));
 
       setAccessToken(tokenResponse.access_token);
       localStorage.setItem('google_calendar_token', tokenResponse.access_token);
       localStorage.setItem('google_calendar_expires_at', expiresAt.toString());
-      setSessionExpired(false); // 로그인 성공 시 세션 만료 상태 해제
-      
-      // 로그인 시도 기록
-      recordLoginAttempt();
+      setSessionExpired(false);
     },
     onError: (error) => {
       console.error('로그인 실패:', error);
+      setSessionExpired(true);
       alert('구글 캘린더 로그인에 실패했습니다: ' + (error.error || '알 수 없는 오류'));
-      
-      // 로그인 실패해도 시도는 기록 (무한 재시도 방지)
-      recordLoginAttempt();
     },
   });
 
@@ -234,92 +136,86 @@ const GoogleCalendar = () => {
     localStorage.removeItem('google_calendar_expires_at');
   };
 
-  // ===== 수정: 하루에 한 번 특정 시간에만 자동 로그인 시도 =====
+  // 초기 로드 시 토큰 확인 및 자동 로그인
   useEffect(() => {
-    // 토큰이 이미 있으면 자동 로그인 시도 안함
-    if (accessToken) return;
+    const savedToken = localStorage.getItem('google_calendar_token');
+    const savedExpiresAt = localStorage.getItem('google_calendar_expires_at');
     
-    let isRefreshing = false;
-    
-    const checkAndLogin = () => {
-      // 이미 오늘 로그인 시도했으면 건너뛰기
-      if (hasTriedLoginToday()) {
-        console.log('오늘 이미 로그인 시도함. 다음 시도 시간:', getNextLoginTime().toLocaleString('ko-KR'));
-        return;
-      }
+    if (savedToken && savedExpiresAt) {
+      const expiresAt = Number(savedExpiresAt);
+      const now = Date.now();
       
-      // 현재 시간이 로그인 시간이고, 아직 시도하지 않았으면 로그인 시도
-      if (isLoginTime() && !isRefreshing) {
-        console.log('자동 로그인 시도 시간입니다.');
-        isRefreshing = true;
-        
-        try {
-          login();
-        } catch (error) {
-          console.error('자동 로그인 실패:', error);
-          isRefreshing = false;
-        }
+      if (now >= expiresAt) {
+        // 만료된 토큰 제거하고 자동 로그인 시도
+        localStorage.removeItem('google_calendar_token');
+        localStorage.removeItem('google_calendar_expires_at');
+        console.log('저장된 토큰이 만료됨 - 자동 로그인 시도');
+        login();
+      } else {
+        console.log('저장된 토큰 사용. 만료 예정:', new Date(expiresAt).toLocaleString('ko-KR'));
+        setAccessToken(savedToken);
       }
-    };
-    
-    // 즉시 한 번 체크
-    checkAndLogin();
-    
-    // 1분마다 체크
-    const interval = setInterval(checkAndLogin, 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, [accessToken, login]);
+    } else {
+      // 토큰이 없으면 자동 로그인 시도
+      console.log('저장된 토큰이 없음 - 자동 로그인 시도');
+      login();
+    }
+  }, []);
 
-  // ===== 수정: 토큰 만료 시 자동 재로그인 시도 (하루 한 번 제한 적용) =====
+  // 자동 토큰 갱신 로직
   useEffect(() => {
     if (!accessToken) return;
-    
-    let isRefreshing = false;
-    
-    const checkTokenExpiry = () => {
+
+    const checkAndRefreshToken = () => {
       const savedExpiresAt = localStorage.getItem('google_calendar_expires_at');
       if (!savedExpiresAt) return;
-      
+
       const expiresAt = Number(savedExpiresAt);
       const now = Date.now();
       const timeUntilExpiry = expiresAt - now;
-      
-      // 만료 직전(5분 전)에 자동으로 재로그인 시도
-      // 단, 오늘 이미 로그인 시도했으면 건너뛰기
-      if (timeUntilExpiry > 0 && timeUntilExpiry <= 5 * 60 * 1000 && !isRefreshing) {
-        if (hasTriedLoginToday()) {
-          console.log('토큰 만료 직전이지만 오늘 이미 로그인 시도함. 다음 시도:', getNextLoginTime().toLocaleString('ko-KR'));
-          return;
-        }
-        
-        console.log('토큰 만료 직전 - 자동 재로그인 시도...');
-        isRefreshing = true;
-        
-        try {
-          login();
-        } catch (error) {
-          console.error('자동 재로그인 실패:', error);
-          isRefreshing = false;
-        }
+
+      // 만료 5분 전 또는 이미 만료된 경우 자동 갱신
+      if (timeUntilExpiry < 5 * 60 * 1000) {
+        console.log('토큰 만료 임박 - 자동 갱신 시도... (남은 시간:', Math.floor(timeUntilExpiry / 1000), '초)');
+        login();
+      } else {
+        console.log('토큰 상태 정상. 만료까지:', Math.floor(timeUntilExpiry / 60000), '분');
       }
-      // 실제로 만료되었을 때만 세션 만료 처리
-      else if (now >= expiresAt) {
+    };
+
+    // 즉시 한 번 체크
+    checkAndRefreshToken();
+    
+    // 1분마다 체크
+    const interval = setInterval(checkAndRefreshToken, 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [accessToken]);
+
+  // 세션 만료 감지 (실제 401 에러만 처리)
+  useEffect(() => {
+    if (error) {
+      const errorMessage = error.message || '';
+      const isAuthError = 
+        errorMessage.includes('인증이 만료되었습니다') || 
+        errorMessage.includes('인증이 만료') || 
+        errorMessage.includes('401') ||
+        errorMessage.includes('Unauthorized') ||
+        (errorMessage.includes('인증') && errorMessage.includes('만료'));
+      
+      if (isAuthError) {
+        console.log('인증 에러 감지 - 자동 로그인 시도');
         setSessionExpired(true);
         setAccessToken(null);
         localStorage.removeItem('google_calendar_token');
         localStorage.removeItem('google_calendar_expires_at');
+        // 자동으로 재로그인 시도
+        setTimeout(() => login(), 1000);
       }
-    };
-    
-    // 즉시 한 번 체크
-    checkTokenExpiry();
-    
-    // 1분마다 체크
-    const interval = setInterval(checkTokenExpiry, 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, [accessToken, login]);
+    } else {
+      setSessionExpired(false);
+    }
+  }, [error]);
 
   // 한국 시간 기준 오늘 날짜 가져오기
   const getKoreaToday = () => {
@@ -391,34 +287,30 @@ const GoogleCalendar = () => {
     
     if (!startDateStr) return false;
 
-    const hasTime = !!event.start?.dateTime; // 시간이 있는 이벤트인지 확인
+    const hasTime = !!event.start?.dateTime;
     
     const target = new Date(targetDate);
     target.setHours(0, 0, 0, 0);
     
     if (hasTime) {
-      // 시간이 있는 이벤트: 시작 시간의 날짜에 포함되는지 확인
       const startDate = parseKoreaDate(startDateStr);
       if (!startDate) return false;
       
       const startDay = new Date(startDate);
       startDay.setHours(0, 0, 0, 0);
       
-      // 같은 날짜면 포함
       if (target.getTime() === startDay.getTime()) {
         return true;
       }
       
-      // 멀티데이 이벤트인 경우 종료 날짜까지 확인
       if (endDateStr) {
         const endDate = parseKoreaDate(endDateStr);
         if (endDate) {
           const endDay = new Date(endDate);
           endDay.setHours(0, 0, 0, 0);
           
-          // 종료일이 시작일과 다른 경우
           if (endDay > startDay) {
-            endDay.setDate(endDay.getDate() - 1); // 종료일은 exclusive
+            endDay.setDate(endDay.getDate() - 1);
             return target > startDay && target <= endDay;
           }
         }
@@ -426,7 +318,6 @@ const GoogleCalendar = () => {
       
       return false;
     } else {
-      // 종일 이벤트: 기존 로직
       const startDate = parseKoreaDate(startDateStr);
       const endDate = parseKoreaDate(endDateStr);
       
@@ -443,7 +334,7 @@ const GoogleCalendar = () => {
     }
   };
 
-  // 날짜별로 이벤트 그룹화 (기간 일정 포함, 시간 이벤트 포함)
+  // 날짜별로 이벤트 그룹화
   const eventsByDate = useMemo(() => {
     if (!events || events.length === 0) {
       console.log('eventsByDate: 이벤트가 없습니다.');
@@ -461,13 +352,12 @@ const GoogleCalendar = () => {
         return;
       }
 
-      const hasTime = !!event.start?.dateTime; // 시간이 있는 이벤트인지 확인
+      const hasTime = !!event.start?.dateTime;
       
       if (hasTime) {
         timeEventCount++;
         console.log(`시간 이벤트 [${index}]:`, event.summary, 'start:', startDateStr);
         
-        // 시간이 있는 이벤트: 시작 시간의 날짜에 추가
         const startDate = parseKoreaDate(startDateStr);
         if (!startDate) {
           console.warn('시간 이벤트 파싱 실패:', event.summary, startDateStr);
@@ -477,7 +367,6 @@ const GoogleCalendar = () => {
         const startDay = new Date(startDate);
         startDay.setHours(0, 0, 0, 0);
         
-        // 한국 시간 기준으로 날짜 키 생성
         const year = startDay.getFullYear();
         const month = String(startDay.getMonth() + 1).padStart(2, '0');
         const day = String(startDay.getDate()).padStart(2, '0');
@@ -490,7 +379,6 @@ const GoogleCalendar = () => {
         }
         grouped[dateKey].push(event);
         
-        // 멀티데이 이벤트인 경우 종료 날짜까지도 추가
         const endDateStr = event.end?.dateTime;
         if (endDateStr) {
           const endDate = parseKoreaDate(endDateStr);
@@ -498,11 +386,10 @@ const GoogleCalendar = () => {
             const endDay = new Date(endDate);
             endDay.setHours(0, 0, 0, 0);
             
-            // 종료일이 시작일과 다른 경우, 종료일 전날까지 추가
             if (endDay > startDay) {
-              endDay.setDate(endDay.getDate() - 1); // 종료일은 exclusive
+              endDay.setDate(endDay.getDate() - 1);
               const currentDate = new Date(startDay);
-              currentDate.setDate(currentDate.getDate() + 1); // 시작일 다음날부터
+              currentDate.setDate(currentDate.getDate() + 1);
               
               while (currentDate <= endDay) {
                 const nextYear = currentDate.getFullYear();
@@ -521,7 +408,6 @@ const GoogleCalendar = () => {
         }
       } else {
         allDayEventCount++;
-        // 종일 이벤트: 기존 로직
         const startDate = parseKoreaDate(startDateStr);
         const endDateStr = event.end?.date || event.end?.dateTime;
         const endDate = parseKoreaDate(endDateStr);
@@ -557,12 +443,10 @@ const GoogleCalendar = () => {
     console.log('종일 이벤트:', allDayEventCount, '개');
     console.log('그룹화된 날짜:', Object.keys(grouped).length, '개');
 
-    // 날짜순으로 정렬
     const sortedDates = Object.keys(grouped).sort();
     const sortedGrouped = {};
     sortedDates.forEach(date => {
       sortedGrouped[date] = grouped[date].sort((a, b) => {
-        // 시간이 있는 이벤트는 시간순으로, 종일 이벤트는 날짜순으로 정렬
         const timeA = a.start?.dateTime ? new Date(a.start.dateTime).getTime() : (a.start?.date || '');
         const timeB = b.start?.dateTime ? new Date(b.start.dateTime).getTime() : (b.start?.date || '');
         return timeA - timeB;
@@ -572,7 +456,7 @@ const GoogleCalendar = () => {
     return sortedGrouped;
   }, [events]);
 
-  // 오늘 일정만 필터링 (일별 보기일 때)
+  // 오늘 일정만 필터링
   const todayEvents = useMemo(() => {
     if (viewMode !== 'day') return null;
     if (!events || events.length === 0) return [];
@@ -682,14 +566,14 @@ const GoogleCalendar = () => {
     setIsModalOpen(true);
   };
 
-  // 일별 보기용 그리드 컬럼 수 계산 (정사각형 그리드)
+  // 일별 보기용 그리드 컬럼 수 계산
   const calculateGridColumns = (count) => {
     if (count === 0) return 1;
     if (count <= 4) return 2;
     if (count <= 9) return 3;
     if (count <= 16) return 4;
     if (count <= 25) return 5;
-    return 6; // 최대 6열
+    return 6;
   };
 
   // 초기화 중이면 로딩 표시
@@ -740,7 +624,6 @@ const GoogleCalendar = () => {
   }
 
   if (!accessToken) {
-    const nextLoginTime = getNextLoginTime();
     return (
       <Box h="100%" display="flex" alignItems="center" justifyContent="center" bg="gray.800" p={4}>
         <VStack gap={4}>
@@ -750,17 +633,13 @@ const GoogleCalendar = () => {
           <Text color="gray.400" fontSize="md" textAlign="center">
             구글 캘린더를 연동하여 일정을 확인할 수 있습니다.
           </Text>
-          <Text color="gray.500" fontSize="sm" textAlign="center">
-            다음 자동 로그인 시도: {nextLoginTime.toLocaleString('ko-KR')}
-          </Text>
-          <Text color="gray.500" fontSize="xs" textAlign="center">
-            (매일 오전 {LOGIN_HOUR}시 {LOGIN_MINUTE}분에 자동 로그인 시도)
-          </Text>
+          {sessionExpired && (
+            <Text color="red.300" fontSize="sm" textAlign="center">
+              세션이 만료되었습니다. 자동으로 재연결을 시도하고 있습니다...
+            </Text>
+          )}
           <Button
-            onClick={() => {
-              recordLoginAttempt(); // 수동 로그인도 기록
-              login();
-            }}
+            onClick={() => login()}
             bg="blue.500"
             color="white"
             size="lg"
@@ -787,7 +666,7 @@ const GoogleCalendar = () => {
       <Button
         onClick={() => {
           handleViewModeChange('day');
-          setIsVisible(true); // 버튼 클릭 시 즉시 표시
+          setIsVisible(true);
         }}
         bg={viewMode === 'day' ? 'blue.500' : 'gray.600'}
         color="white"
@@ -848,7 +727,7 @@ const GoogleCalendar = () => {
     </HStack>
   );
 
-  // 일별 보기 - 정사각형 그리드 (스크롤 없이)
+  // 일별 보기
   const renderDayView = () => {
     if (!todayEvents || todayEvents.length === 0) {
       return (
@@ -873,10 +752,7 @@ const GoogleCalendar = () => {
                 <>
                   <Text color="red.300" fontSize="xl" fontWeight="bold">⚠️ 세션 만료</Text>
                   <Text color="gray.400">Google 캘린더 세션이 만료되었습니다.</Text>
-                  <Text color="gray.500" fontSize="sm">다음 자동 로그인: {getNextLoginTime().toLocaleString('ko-KR')}</Text>
-                  <Text color="gray.500" fontSize="xs" mt={2}>
-                    (매일 오전 {LOGIN_HOUR}시 {LOGIN_MINUTE}분에 자동 로그인 시도)
-                  </Text>
+                  <Text color="gray.500" fontSize="sm">자동으로 재연결을 시도하고 있습니다...</Text>
                 </>
               ) : (
                 <>
@@ -886,10 +762,9 @@ const GoogleCalendar = () => {
               )}
             </VStack>
           </Box>
-          {/* Footer */}
           <Box mt={4} textAlign="center" pt={2} borderTop="1px solid" borderColor="gray.700">
             <Text color="gray.500" fontSize="sm">
-              🔄 12시간마다 자동 갱신, 즉시 갱신은 새로고침을 눌러주세요.
+              🔄 자동 갱신 활성화 (토큰 만료 5분 전 자동 갱신)
             </Text>
           </Box>
         </Box>
@@ -897,12 +772,7 @@ const GoogleCalendar = () => {
     }
 
     const columns = calculateGridColumns(todayEvents.length);
-    const rows = Math.ceil(todayEvents.length / columns);
     
-    // 고정 크기로 설정 (더 작게)
-    const itemHeight = `calc((100% - ${(rows - 1) * 12}px) / ${rows})`;
-    const itemWidth = `calc((100% - ${(columns - 1) * 12}px) / ${columns})`;
-
     return (
       <Box 
         h="100%" 
@@ -987,10 +857,9 @@ const GoogleCalendar = () => {
           </Grid>
         </Box>
         
-        {/* Footer */}
         <Box mt={4} textAlign="center" pt={2} borderTop="1px solid" borderColor="gray.700">
           <Text color="gray.500" fontSize="sm">
-            🔄 12시간마다 자동 갱신, 즉시 갱신은 새로고침을 눌러주세요.
+            🔄 자동 갱신 활성화 (토큰 만료 5분 전 자동 갱신)
           </Text>
         </Box>
       </Box>
@@ -1205,7 +1074,7 @@ const GoogleCalendar = () => {
     );
   };
 
-  // 주별 보기 - 그리드 형태
+  // 주별 보기
   const renderWeekView = () => {
     if (!weekGridData) {
       return (
@@ -1229,19 +1098,15 @@ const GoogleCalendar = () => {
               <VStack gap={2}>
                 <Text color="red.300" fontSize="lg" fontWeight="bold">⚠️ 세션 만료</Text>
                 <Text color="gray.400">Google 캘린더 세션이 만료되었습니다.</Text>
-                <Text color="gray.500" fontSize="sm">다음 자동 로그인: {getNextLoginTime().toLocaleString('ko-KR')}</Text>
-                <Text color="gray.500" fontSize="xs" mt={2}>
-                  (매일 오전 {LOGIN_HOUR}시 {LOGIN_MINUTE}분에 자동 로그인 시도)
-                </Text>
+                <Text color="gray.500" fontSize="sm">자동으로 재연결을 시도하고 있습니다...</Text>
               </VStack>
             ) : (
               <Text color="gray.400">일정이 없습니다.</Text>
             )}
           </Box>
-          {/* Footer */}
           <Box mt={4} textAlign="center" pt={2} borderTop="1px solid" borderColor="gray.700">
             <Text color="gray.500" fontSize="sm">
-              🔄 12시간마다 자동 갱신, 즉시 갱신은 새로고침을 눌러주세요.
+              🔄 자동 갱신 활성화
             </Text>
           </Box>
         </Box>
@@ -1291,18 +1156,16 @@ const GoogleCalendar = () => {
           </Grid>
         </Box>
 
-        
-        {/* Footer */}
         <Box mt={4} textAlign="center" pt={2} borderTop="1px solid" borderColor="gray.700">
           <Text color="gray.500" fontSize="sm">
-            🔄 5분마다 자동 갱신
+            🔄 자동 갱신 활성화
           </Text>
         </Box>
       </Box>
     );
   };
 
-  // 월별 보기 - 그리드 형태
+  // 월별 보기
   const renderMonthView = () => {
     if (!monthGridData) {
       return (
@@ -1326,19 +1189,15 @@ const GoogleCalendar = () => {
               <VStack gap={2}>
                 <Text color="red.300" fontSize="lg" fontWeight="bold">⚠️ 세션 만료</Text>
                 <Text color="gray.400">Google 캘린더 세션이 만료되었습니다.</Text>
-                <Text color="gray.500" fontSize="sm">다음 자동 로그인: {getNextLoginTime().toLocaleString('ko-KR')}</Text>
-                <Text color="gray.500" fontSize="xs" mt={2}>
-                  (매일 오전 {LOGIN_HOUR}시 {LOGIN_MINUTE}분에 자동 로그인 시도)
-                </Text>
+                <Text color="gray.500" fontSize="sm">자동으로 재연결을 시도하고 있습니다...</Text>
               </VStack>
             ) : (
               <Text color="gray.400">일정이 없습니다.</Text>
             )}
           </Box>
-          {/* Footer */}
           <Box mt={4} textAlign="center" pt={2} borderTop="1px solid" borderColor="gray.700">
             <Text color="gray.500" fontSize="sm">
-              🔄 5분마다 자동 갱신
+              🔄 자동 갱신 활성화
             </Text>
           </Box>
         </Box>
@@ -1372,7 +1231,6 @@ const GoogleCalendar = () => {
         </Flex>
 
         <Box flex="1" overflow="hidden" display="flex" flexDirection="column">
-          {/* 요일 헤더 */}
           <Grid templateColumns="repeat(7, 1fr)" gap={1} mb={2} flexShrink={0}>
             {dayNames.map((dayName) => (
               <Box key={dayName} textAlign="center" p={2}>
@@ -1383,7 +1241,6 @@ const GoogleCalendar = () => {
             ))}
           </Grid>
 
-          {/* 주별 그리드 */}
           <Box flex="1" overflow="hidden" display="flex" flexDirection="column" minH="0">
             <VStack gap={1} align="stretch" flex="1" h="100%" minH="0">
               {monthGridData.map((week, weekIdx) => (
@@ -1408,10 +1265,9 @@ const GoogleCalendar = () => {
           </Box>
         </Box>
         
-        {/* Footer */}
         <Box mt={4} textAlign="center" pt={2} borderTop="1px solid" borderColor="gray.700">
           <Text color="gray.500" fontSize="sm">
-            🔄 5분마다 자동 갱신
+            🔄 자동 갱신 활성화
           </Text>
         </Box>
       </Box>
@@ -1425,8 +1281,8 @@ const GoogleCalendar = () => {
       {viewMode === 'week' && renderWeekView()}
       {viewMode === 'month' && renderMonthView()}
 
-      {/* 더보기 모달 - 모든 뷰에서 렌더링 */}
-            <DialogRoot open={isModalOpen} onOpenChange={(e) => !e.open && setIsModalOpen(false)} size="md">
+      {/* 더보기 모달 */}
+      <DialogRoot open={isModalOpen} onOpenChange={(e) => !e.open && setIsModalOpen(false)} size="md">
         <DialogBackdrop bg="blackAlpha.800" onClick={() => setIsModalOpen(false)} />
         <DialogPositioner placement="center" style={{ alignItems: 'center', justifyContent: 'center' }}>
           <DialogContent 
@@ -1506,4 +1362,5 @@ const GoogleCalendar = () => {
     </>
   );
 };
+
 export default GoogleCalendar;
