@@ -174,7 +174,7 @@ const CustomerStats = () => {
     return (
       <Flex justify="center" align="center" minH="100vh" bg="gray.900">
         <Spinner size="xl" color="blue.500" />
-        <Text ml={4} color="white" fontSize="xl">로딩 중...</Text>
+        <Text ml={4} color="white" fontSize="2xl">로딩 중...</Text>
       </Flex>
     );
   }
@@ -183,7 +183,7 @@ const CustomerStats = () => {
     return (
       <Box minH="100vh" bg="gray.900" p={6}>
         <Box bg="gray.800" p={6} borderRadius="lg" textAlign="center">
-          <Text color="gray.400" fontSize="xl">📊 집계할 데이터가 없습니다</Text>
+          <Text color="gray.400" fontSize="2xl">📊 집계할 데이터가 없습니다</Text>
         </Box>
       </Box>
     );
@@ -215,15 +215,15 @@ const CustomerStats = () => {
     <Box minH="100vh" bg="gray.900" p={4}>
       {/* 헤더 */}
       <Flex justify="space-between" align="center" mb={4}>
-        <Text fontSize="3xl" fontWeight="bold" color="white">
+        <Text fontSize="5xl" fontWeight="bold" color="white">
           📊 고객사별 이슈 집계
         </Text>
-        <Flex align="center" gap={3} fontSize="md" color="gray.400">
-          <Text>전체 {issues.length}건</Text>
+        <Flex align="center" gap={4} fontSize="xl" color="gray.400">
+          <Text fontWeight="bold">전체 {issues.length}건</Text>
           <Text>|</Text>
-          <Text>{Object.keys(stats).length}개사</Text>
+          <Text fontWeight="bold">{Object.keys(stats).length}개사</Text>
           <Text>|</Text>
-          <Text fontSize="sm">{new Date().toLocaleTimeString('ko-KR')}</Text>
+          <Text fontSize="lg">{new Date().toLocaleTimeString('ko-KR')}</Text>
         </Flex>
       </Flex>
 
@@ -236,14 +236,14 @@ const CustomerStats = () => {
         overflowY="auto"
         css={{
           '&::-webkit-scrollbar': {
-            width: '8px',
+            width: '10px',
           },
           '&::-webkit-scrollbar-track': {
             background: '#2D3748',
           },
           '&::-webkit-scrollbar-thumb': {
             background: '#4A5568',
-            borderRadius: '4px',
+            borderRadius: '5px',
           },
           '&::-webkit-scrollbar-thumb:hover': {
             background: '#718096',
@@ -253,12 +253,12 @@ const CustomerStats = () => {
         {/* 헤더 */}
         <Flex 
           bg="gray.700" 
-          px={4}
-          py={3}
+          px={5}
+          py={5}
           fontWeight="bold" 
-          color="gray.300" 
-          fontSize="md"
-          borderBottom="2px solid"
+          color="white" 
+          fontSize="xl"
+          borderBottom="3px solid"
           borderColor="gray.600"
           position="sticky"
           top={0}
@@ -287,22 +287,22 @@ const CustomerStats = () => {
           return (
             <Flex
               key={customer}
-              px={4}
-              py={3}
+              px={5}
+              py={5}
               bg={rowBg}
               borderBottom="1px solid"
               borderColor="gray.700"
-              borderLeft={delayed > 0 ? '4px solid' : 'none'}
+              borderLeft={delayed > 0 ? '5px solid' : 'none'}
               borderLeftColor={delayed > 0 ? 'red.500' : 'transparent'}
               _hover={{ bg: 'gray.700' }}
               alignItems="center"
-              fontSize="md"
+              fontSize="xl"
             >
               {/* 순위 */}
               <Box w="6%" textAlign="center">
                 <Text 
                   color={rank <= 3 ? 'yellow.400' : 'gray.500'} 
-                  fontSize="xl" 
+                  fontSize="3xl" 
                   fontWeight="bold"
                 >
                   {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
@@ -311,20 +311,20 @@ const CustomerStats = () => {
 
               {/* 고객사명 */}
               <Box w="25%">
-                <Flex align="center" gap={2}>
+                <Flex align="center" gap={3}>
                   <Text 
                     color="white" 
-                    fontSize="md" 
+                    fontSize="2xl" 
                     fontWeight="bold"
                     isTruncated
                   >
                     {customer}
                   </Text>
                   {completionRate >= 80 && (
-                    <Badge colorScheme="green" fontSize="xs">우수</Badge>
+                    <Badge colorScheme="green" fontSize="md" px={2} py={1}>우수</Badge>
                   )}
                   {delayed > 0 && (
-                    <Badge colorScheme="red" fontSize="xs">지연</Badge>
+                    <Badge colorScheme="red" fontSize="md" px={2} py={1}>지연</Badge>
                   )}
                 </Flex>
               </Box>
@@ -333,13 +333,13 @@ const CustomerStats = () => {
               <Box w="10%" textAlign="center">
                 <Text 
                   color="cyan.300" 
-                  fontSize="2xl" 
+                  fontSize="4xl" 
                   fontWeight="bold"
                   cursor="pointer"
                   _hover={{ 
                     color: 'cyan.200',
                     textDecoration: 'underline',
-                    transform: 'scale(1.1)',
+                    transform: 'scale(1.15)',
                     transition: 'all 0.2s'
                   }}
                   onClick={() => handleOpenModal(customer, 'total')}
@@ -352,13 +352,13 @@ const CustomerStats = () => {
               <Box w="15%" textAlign="center">
                 <Text 
                   color="yellow.300" 
-                  fontSize="2xl" 
+                  fontSize="4xl" 
                   fontWeight="bold"
                   cursor="pointer"
                   _hover={{ 
                     color: 'yellow.200',
                     textDecoration: 'underline',
-                    transform: 'scale(1.1)',
+                    transform: 'scale(1.15)',
                     transition: 'all 0.2s'
                   }}
                   onClick={() => handleOpenModal(customer, 'inProgress')}
@@ -371,13 +371,13 @@ const CustomerStats = () => {
               <Box w="15%" textAlign="center">
                 <Text 
                   color="green.300" 
-                  fontSize="2xl" 
+                  fontSize="4xl" 
                   fontWeight="bold"
                   cursor="pointer"
                   _hover={{ 
                     color: 'green.200',
                     textDecoration: 'underline',
-                    transform: 'scale(1.1)',
+                    transform: 'scale(1.15)',
                     transition: 'all 0.2s'
                   }}
                   onClick={() => handleOpenModal(customer, 'completed')}
@@ -390,13 +390,13 @@ const CustomerStats = () => {
               <Box w="15%" textAlign="center">
                 <Text 
                   color={delayed > 0 ? 'red.300' : 'gray.600'} 
-                  fontSize="2xl" 
+                  fontSize="4xl" 
                   fontWeight="bold"
                   cursor={delayed > 0 ? 'pointer' : 'default'}
                   _hover={delayed > 0 ? { 
                     color: 'red.200',
                     textDecoration: 'underline',
-                    transform: 'scale(1.1)',
+                    transform: 'scale(1.15)',
                     transition: 'all 0.2s'
                   } : {}}
                   onClick={() => delayed > 0 && handleOpenModal(customer, 'delayed')}
@@ -407,7 +407,7 @@ const CustomerStats = () => {
 
               {/* 평균 경과일 */}
               <Box w="12%" textAlign="center">
-                <Text color="cyan.300" fontSize="xl" fontWeight="bold">
+                <Text color="cyan.300" fontSize="3xl" fontWeight="bold">
                   {avgDays}
                 </Text>
               </Box>
@@ -417,8 +417,8 @@ const CustomerStats = () => {
                 <Flex 
                   align="center" 
                   justify="center" 
-                  w="52px" 
-                  h="52px" 
+                  w="70px" 
+                  h="70px" 
                   borderRadius="full"
                   bg={
                     completionRate >= 80 ? 'green.900' :
@@ -426,7 +426,7 @@ const CustomerStats = () => {
                     completionRate >= 30 ? 'yellow.900' :
                     'red.900'
                   }
-                  border="3px solid"
+                  border="5px solid"
                   borderColor={
                     completionRate >= 80 ? 'green.500' :
                     completionRate >= 50 ? 'blue.500' :
@@ -442,7 +442,7 @@ const CustomerStats = () => {
                       completionRate >= 30 ? 'yellow.300' :
                       'red.300'
                     }
-                    fontSize="md" 
+                    fontSize="xl" 
                     fontWeight="bold"
                   >
                     {completionRate}%
@@ -455,51 +455,51 @@ const CustomerStats = () => {
 
         {/* 합계 행 */}
         <Flex
-          px={4}
-          py={4}
+          px={5}
+          py={6}
           bg="gray.700"
-          borderTop="3px solid"
+          borderTop="4px solid"
           borderColor="cyan.500"
           alignItems="center"
-          fontSize="md"
+          fontSize="xl"
           fontWeight="bold"
           position="sticky"
           bottom={0}
         >
           <Box w="6%" textAlign="center">
-            <Text color="cyan.300" fontSize="xl">📊</Text>
+            <Text color="cyan.300" fontSize="3xl">📊</Text>
           </Box>
 
           <Box w="25%">
-            <Text color="cyan.300" fontSize="xl">합계</Text>
+            <Text color="cyan.300" fontSize="3xl">합계</Text>
           </Box>
 
           <Box w="10%" textAlign="center">
-            <Text color="cyan.300" fontSize="3xl" fontWeight="bold">
+            <Text color="cyan.300" fontSize="5xl" fontWeight="bold">
               {totalStats.total}
             </Text>
           </Box>
 
           <Box w="15%" textAlign="center">
-            <Text color="yellow.300" fontSize="3xl" fontWeight="bold">
+            <Text color="yellow.300" fontSize="5xl" fontWeight="bold">
               {totalStats.inProgress}
             </Text>
           </Box>
 
           <Box w="15%" textAlign="center">
-            <Text color="green.300" fontSize="3xl" fontWeight="bold">
+            <Text color="green.300" fontSize="5xl" fontWeight="bold">
               {totalStats.completed}
             </Text>
           </Box>
 
           <Box w="15%" textAlign="center">
-            <Text color="red.300" fontSize="3xl" fontWeight="bold">
+            <Text color="red.300" fontSize="5xl" fontWeight="bold">
               {totalStats.delayed}
             </Text>
           </Box>
 
           <Box w="12%" textAlign="center">
-            <Text color="cyan.300" fontSize="2xl" fontWeight="bold">
+            <Text color="cyan.300" fontSize="4xl" fontWeight="bold">
               {avgDaysTotal}
             </Text>
           </Box>
@@ -508,8 +508,8 @@ const CustomerStats = () => {
             <Flex 
               align="center" 
               justify="center" 
-              w="56px" 
-              h="56px" 
+              w="76px" 
+              h="76px" 
               borderRadius="full"
               bg={
                 completionRateTotal >= 80 ? 'green.900' :
@@ -517,7 +517,7 @@ const CustomerStats = () => {
                 completionRateTotal >= 30 ? 'yellow.900' :
                 'red.900'
               }
-              border="3px solid"
+              border="5px solid"
               borderColor={
                 completionRateTotal >= 80 ? 'green.500' :
                 completionRateTotal >= 50 ? 'blue.500' :
@@ -533,7 +533,7 @@ const CustomerStats = () => {
                   completionRateTotal >= 30 ? 'yellow.300' :
                   'red.300'
                 }
-                fontSize="lg" 
+                fontSize="2xl" 
                 fontWeight="bold"
               >
                 {completionRateTotal}%
