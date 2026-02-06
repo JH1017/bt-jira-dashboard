@@ -9,6 +9,7 @@ import ProjectSchedule from '../components/ProjectSchedule/ProjectSchedule';
 import MemberSchedule from '../components/MemberSchedule/MemberSchedule';
 import BusinessPlan from '../components/BusinessPlan/BusinessPlan';
 import GoogleCalendar from '../components/GoogleCalendar/GoogleCalendar';
+import CustomerStats from '../components/CustomerStats/CustomerStats';  
 import { useJiraStats, useAllIssues, useRefreshStats } from '../hooks/useJiraData';
 
 const Dashboard = () => {
@@ -32,12 +33,13 @@ const Dashboard = () => {
   // 페이지 정보
 const allPages = [
   { id: 0, shortTitle: '이슈', color: 'blue.400', title: '📋 개발6팀 이슈 현황' },
-  { id: 1, shortTitle: '담당자', color: 'cyan.400', title: '👤 담당자별 이슈 현황' },
-  { id: 2, shortTitle: '할당', color: 'green.400', title: '👨‍💻 프로젝트 투입인력 할당 현황' },
-  { id: 3, shortTitle: '투입', color: 'purple.400', title: '📆 인력별 프로젝트 투입현황' },
-  { id: 4, shortTitle: '예정', color: 'orange.400', title: '📅 프로젝트 예정' },
-  { id: 5, shortTitle: '사업', color: 'pink.400', title: '📊 사업계획' },
-  { id: 6, shortTitle: '캘린더', color: 'teal.400', title: '📅 구글 캘린더' }  
+  { id: 1, shortTitle: '고객사', color: 'red.400', title: '🏢 고객사별 이슈 집계' }, 
+  { id: 2, shortTitle: '담당자', color: 'cyan.400', title: '👤 담당자별 이슈 현황' },
+  { id: 3, shortTitle: '할당', color: 'green.400', title: '👨‍💻 프로젝트 투입인력 할당 현황' },
+  { id: 4, shortTitle: '투입', color: 'purple.400', title: '📆 인력별 프로젝트 투입현황' },
+  { id: 5, shortTitle: '예정', color: 'orange.400', title: '📅 프로젝트 예정' },
+  { id: 6, shortTitle: '사업', color: 'pink.400', title: '📊 사업계획' },
+  { id: 7, shortTitle: '캘린더', color: 'teal.400', title: '📅 구글 캘린더' }  
 ];
 
   const pages = allPages.filter(p => visiblePages.includes(p.id));
@@ -110,11 +112,12 @@ const allPages = [
     if (!config) return 60000;
     switch (activePage) {
       case 0: return config.intervals?.issueStatus || 60000;
-      case 1: return config.intervals?.assigneeStats || 60000;
-      case 2: return config.intervals?.projectAllocation || 60000;
-      case 3: return config.intervals?.memberSchedule || 60000;
-      case 4: return config.intervals?.projectSchedule || 60000;
-      case 5: return config.intervals?.businessPlan || 60000;
+      case 1: return config.intervals?.customerStats || 60000; 
+      case 2: return config.intervals?.assigneeStats || 60000;
+      case 3: return config.intervals?.projectAllocation || 60000;
+      case 4: return config.intervals?.memberSchedule || 60000;
+      case 5: return config.intervals?.projectSchedule || 60000;
+      case 6: return config.intervals?.businessPlan || 60000;
       default: return 60000;
     }
   };
@@ -298,12 +301,13 @@ const allPages = [
           </Box>
         )}
 
-        {activePage === 1 && <AssigneeStats />}
-        {activePage === 2 && <ProjectStatus />}
-        {activePage === 3 && <MemberSchedule />}
-        {activePage === 4 && <ProjectSchedule />}
-        {activePage === 5 && <BusinessPlan />}
-        {activePage === 6 && <GoogleCalendar />}
+        {activePage === 1 && <CustomerStats issues={allIssues || []} />}
+        {activePage === 2 && <AssigneeStats />}
+        {activePage === 3 && <ProjectStatus />}
+        {activePage === 4 && <MemberSchedule />}
+        {activePage === 5 && <ProjectSchedule />}
+        {activePage === 6 && <BusinessPlan />}
+        {activePage === 7 && <GoogleCalendar />}
       </Box>
 
       {/* 설정 모달 */}

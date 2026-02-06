@@ -9,10 +9,10 @@ const JIRA_CONFIG = {
 
 // 기본 쿼리 설정
 export const DEFAULT_QUERIES = {
-  received: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND createdDate > 2025-11-01 ORDER BY createdDate ASC`,
-  inProgress: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND status != Closed ORDER BY createdDate ASC`,
-  delayed: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀)) AND status != Closed AND due < now()`,
-  total: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀)) AND status != Closed`,
+  received: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND duedate > 2026-01-01 ORDER BY createdDate ASC`,
+  inProgress: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND (status = Closed) AND duedate > 2026-01-01 ORDER BY createdDate ASC`,
+  delayed: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND (status = Closed) AND duedate > 2026-01-01 ORDER BY createdDate ASC`,
+  total: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀) ) AND (status = Closed) AND duedate > 2026-01-01 ORDER BY createdDate ASC`,
 };
 
 // Axios 인스턴스 생성
@@ -64,15 +64,63 @@ const calculateDelay = (dueDate) => {
 // SRM 진행단계 값 추출
 const getSrmStatus = (customField) => {
   if (!customField) return '-';
-  // 객체인 경우 value 속성 사용
   if (typeof customField === 'object' && customField.value) {
     return customField.value;
   }
-  // 문자열인 경우 그대로 반환
   if (typeof customField === 'string') {
     return customField;
   }
   return '-';
+};
+
+// ⭐ 고객사 정보 추출 함수
+const getCustomerName = (fields) => {
+  // customfield_10402의 child.value가 고객사명
+  if (fields.customfield_10402) {
+    // child에 실제 고객사명이 있음
+    if (fields.customfield_10402.child && fields.customfield_10402.child.value) {
+      return fields.customfield_10402.child.value;
+    }
+    // child가 없으면 상위 value 사용
+    if (fields.customfield_10402.value) {
+      return fields.customfield_10402.value;
+    }
+  }
+
+  // Fallback: Components
+  if (fields.components && fields.components.length > 0) {
+    return fields.components[0].name;
+  }
+
+  // Fallback: Summary에서 추출 (예: [우리카드] 형식)
+  if (fields.summary) {
+    const match = fields.summary.match(/^\[(.*?)\]/);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return '미분류';
+};
+
+// 이슈 매핑 공통 함수
+const mapIssue = (issue) => {
+  const delay = calculateDelay(issue.fields.duedate);
+  return {
+    key: issue.key,
+    summary: issue.fields.summary,
+    priority: issue.fields.priority?.name || 'Major',
+    assignee: issue.fields.assignee?.displayName || '미지정',
+    status: issue.fields.status?.name || '상태없음',
+    srmStatus: getSrmStatus(issue.fields.customfield_11517),
+    type: issue.fields.issuetype?.name || 'Task',
+    createdDate: formatDate(issue.fields.created),
+    daysFromCreated: calculateDaysFromCreated(issue.fields.created),
+    dueDate: formatDate(issue.fields.duedate, '미설정'),
+    isDelayed: delay.isDelayed,
+    delayDays: delay.delayDays,
+    customer: getCustomerName(issue.fields),  // ⭐ 고객사 추가!
+  };
 };
 
 // 1페이지 - 지연 건
@@ -82,28 +130,12 @@ export const getDelayedIssues = async () => {
       params: {
         jql: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀)) AND (status != Closed) AND due < now() ORDER BY createdDate ASC`,
         maxResults: 50,
-        fields: 'summary,priority,assignee,status,issuetype,created,duedate,customfield_11517',
+        // ⭐ customfield_10402 추가!
+        fields: 'summary,priority,assignee,status,issuetype,created,duedate,customfield_11517,customfield_10402,components',
       },
     });
 
-    const issues = response.data.issues.map((issue) => {
-      const delay = calculateDelay(issue.fields.duedate);
-      return {
-        key: issue.key,
-        summary: issue.fields.summary,
-        priority: issue.fields.priority?.name || 'Major',
-        assignee: issue.fields.assignee?.displayName || '미지정',
-        status: issue.fields.status?.name || '상태없음',
-        srmStatus: getSrmStatus(issue.fields.customfield_11517),
-        type: issue.fields.issuetype?.name || 'Task',
-        createdDate: formatDate(issue.fields.created),
-        daysFromCreated: calculateDaysFromCreated(issue.fields.created),
-        dueDate: formatDate(issue.fields.duedate, '미설정'),
-        isDelayed: delay.isDelayed,
-        delayDays: delay.delayDays,
-      };
-    });
-
+    const issues = response.data.issues.map(mapIssue);
     return issues;
   } catch (error) {
     console.error('JIRA 지연 이슈 에러:', error);
@@ -118,27 +150,12 @@ export const getAllIssues = async () => {
       params: {
         jql: `project = SS AND (처리부서 = 개발6팀 OR assignee in membersOf(개발6팀)) AND status != Closed ORDER BY createdDate ASC`,
         maxResults: 50,
-        fields: 'summary,priority,assignee,status,issuetype,created,duedate,customfield_11517',
+        // ⭐ customfield_10402 추가!
+        fields: 'summary,priority,assignee,status,issuetype,created,duedate,customfield_11517,customfield_10402,components',
       },
     });
 
-    const issues = response.data.issues.map((issue) => {
-      const delay = calculateDelay(issue.fields.duedate);
-      return {
-        key: issue.key,
-        summary: issue.fields.summary,
-        priority: issue.fields.priority?.name || 'Major',
-        assignee: issue.fields.assignee?.displayName || '미지정',
-        status: issue.fields.status?.name || '상태없음',
-        srmStatus: getSrmStatus(issue.fields.customfield_11517),
-        type: issue.fields.issuetype?.name || 'Task',
-        createdDate: formatDate(issue.fields.created),
-        daysFromCreated: calculateDaysFromCreated(issue.fields.created),
-        dueDate: formatDate(issue.fields.duedate, '미설정'),
-        isDelayed: delay.isDelayed,
-        delayDays: delay.delayDays,
-      };
-    });
+    const issues = response.data.issues.map(mapIssue);
 
     // 지연 이슈를 맨 위로 정렬
     issues.sort((a, b) => {
